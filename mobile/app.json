@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Holy Face Student",
+    "slug": "holyface-student",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "holyface",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#0b1f3a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "school.holyface.student",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Unlock your Holy Face student ID with Face ID."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0b1f3a"
+      },
+      "package": "school.holyface.student"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-local-authentication",
+      "expo-router"
+    ],
+    "extra": {
+      "apiBaseUrl": "http://192.168.1.10:8089"
+    }
+  }
+}

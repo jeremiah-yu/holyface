@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /login.php
+Disallow: /student-portal.php
+Disallow: /teacher-portal.php
+Disallow: /admin-portal.php
+Sitemap: sitemap.php

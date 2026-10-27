@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Prefer sitemap.php for absolute URLs matching the current host. This file lists public pages. -->
+  <url><loc>/index.php</loc><changefreq>weekly</changefreq></url>
+  <url><loc>/features.php</loc><changefreq>monthly</changefreq></url>
+  <url><loc>/how-it-works.php</loc><changefreq>monthly</changefreq></url>
+  <url><loc>/strands.php</loc><changefreq>monthly</changefreq></url>
+  <url><loc>/apps.php</loc><changefreq>monthly</changefreq></url>
+  <url><loc>/terms.php</loc><changefreq>yearly</changefreq></url>
+  <url><loc>/privacy.php</loc><changefreq>yearly</changefreq></url>
+  <url><loc>/ai-policy.php</loc><changefreq>yearly</changefreq></url>
+  <url><loc>/cookies.php</loc><changefreq>yearly</changefreq></url>
+</urlset>

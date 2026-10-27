@@ -1,0 +1,14 @@
+/api/vendor/
+/api/.env
+/desktop/node_modules/
+/desktop/dist/
+/desktop/out/
+/desktop/release/
+/mobile/node_modules/
+/mobile/.expo/
+/web/dist/
+/.idea/
+/.vscode/
+*.log
+Thumbs.db
+.DS_Store
