@@ -120,5 +120,6 @@ foreach ($pages as $src => $dest) {
 }
 
 copy_tree($public . '/assets', $dist . '/assets');
+copy_tree($public . '/downloads', $dist . '/downloads');
 file_put_contents($dist . '/.nojekyll', '');
 echo "Static site written to $dist\n";

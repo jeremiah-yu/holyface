@@ -11,6 +11,14 @@ return [
     'web_base' => getenv('AMGS_WEB_BASE') ?: '',
     'site_url' => getenv('AMGS_SITE_URL') ?: '',
     'portal_url' => 'https://www.holyface.school/php/landing/login-portal.php',
+    /**
+     * Download QR targets. Leave empty to use files in public/downloads/ after you drop
+     * the APK / Windows installer there. Set Play Store or GitHub Release URLs at deploy.
+     */
+    'downloads' => [
+        'mobile' => getenv('AMGS_DL_MOBILE') ?: '',
+        'desktop' => getenv('AMGS_DL_DESKTOP') ?: '',
+    ],
     'official_website' => 'https://www.holyface.school/',
     'contact_email' => 'registrar@holyface.school',
     'contact_phone' => '(02) 8546-8364',

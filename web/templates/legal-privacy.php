@@ -11,11 +11,11 @@
     <ul>
       <li><strong>Necessary cookies:</strong> session and CSRF protection. See the <a href="<?= e(url('cookies.php')) ?>">Cookie notice</a>.</li>
     </ul>
-    <p>This promotional site <strong>does not display</strong> student names, LRNs, photos, grades, or guardian contacts.</p>
+    <p>This promotional site <strong>does not display</strong> student names, student numbers, photos, grades, or guardian contacts.</p>
     <h2>What AMGS (logged-in apps) may process</h2>
-    <p>Account identity, LRN, strand, grade level, section, school year, photo path, guardian name and contact, encoded grades, consent logs, and audit logs of grade changes. Legal bases include legitimate educational interest, contract (enrollment), and consent where required (for example, optional study-tool features).</p>
+    <p>Account identity, student number, strand, grade level, section, school year, photo path, guardian name and contact, encoded grades, consent logs, and audit logs of grade changes. Legal bases include legitimate educational interest, contract (enrollment), and consent where required (for example, optional study-tool features).</p>
     <h2>AI study tools</h2>
-    <p>We do not send a student’s name, LRN, photo, or contact details to any external AI service. See the <a href="<?= e(url('ai-policy.php')) ?>">AI Use Policy</a>.</p>
+    <p>We do not send a student’s name, student number, photo, or contact details to any external AI service. See the <a href="<?= e(url('ai-policy.php')) ?>">AI Use Policy</a>.</p>
     <h2>Sharing</h2>
     <p>We do not sell personal data. Access is limited to authorized School personnel and processors who host the system under contract. We may disclose data when required by law or DepEd regulation.</p>
     <h2>Retention and rights</h2>

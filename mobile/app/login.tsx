@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../src/auth/AuthContext';
+import { PasswordField } from '../src/components/PasswordField';
 import { t } from '../src/i18n';
 
 export default function LoginScreen() {
@@ -36,16 +37,11 @@ export default function LoginScreen() {
         autoCapitalize="none"
         value={id}
         onChangeText={setId}
-        placeholder="s001 or 12-digit LRN"
+        placeholder="s001 or student number"
         placeholderTextColor={colors.muted}
       />
       <Text style={[styles.label, { color: colors.text }]}>{t(lang, 'password')}</Text>
-      <TextInput
-        style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <PasswordField value={password} onChangeText={setPassword} colors={colors} autoComplete="password" />
       <Pressable style={styles.btn} onPress={onLogin} disabled={busy}>
         <Text style={styles.btnText}>{busy ? '…' : t(lang, 'login')}</Text>
       </Pressable>

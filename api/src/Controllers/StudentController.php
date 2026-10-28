@@ -56,6 +56,7 @@ final class StudentController
                 'student_id' => (int) $card['id'],
                 'full_name' => $card['full_name'],
                 'lrn' => $card['lrn'],
+                'student_number' => $card['lrn'],
                 'photo_path' => $card['photo_path'],
                 'strand_code' => $card['strand_code'],
                 'strand_name' => $card['strand_name'],
@@ -215,7 +216,7 @@ final class StudentController
 
         $cardAvailable = false;
         try {
-            $cardAvailable = $this->reportCards->cardForUser((int) $auth['user']['id']) !== null;
+            $cardAvailable = $this->reportCards->hasCardForUser((int) $auth['user']['id']);
         } catch (\Throwable) {
             $cardAvailable = false;
         }
@@ -239,7 +240,9 @@ final class StudentController
         $userId = (int) $auth['user']['id'];
         try {
             $card = $this->reportCards->cardForUser($userId);
-            $progress = $this->reportCards->progressForUser($userId);
+            $progress = $card !== null
+                ? ['total' => 0, 'submitted' => 0, 'missing' => []]
+                : $this->reportCards->progressForUser($userId);
         } catch (\Throwable) {
             Response::json([
                 'success' => true,

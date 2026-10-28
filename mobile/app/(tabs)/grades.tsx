@@ -1,9 +1,10 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { apiRequest } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthContext';
 import { t } from '../../src/i18n';
+import { cacheSet } from '../../src/storage/cache';
 
 type Academics = {
   general_average: number | null;
@@ -22,7 +23,16 @@ export default function GradesScreen() {
   const [data, setData] = useState<Academics | null>(null);
 
   useEffect(() => {
-    apiRequest<Academics>('/students/academics', { token }).then(setData).catch(() => undefined);
+    apiRequest<Academics>('/students/academics', { token })
+      .then((r) => {
+        setData(r);
+        if (r.official_card_available) {
+          apiRequest('/students/report-card', { token, timeoutMs: 8000 })
+            .then((card) => cacheSet('report_card', card))
+            .catch(() => undefined);
+        }
+      })
+      .catch(() => undefined);
   }, [token]);
 
   const maxH = 100;
@@ -32,10 +42,25 @@ export default function GradesScreen() {
       <Text style={{ color: colors.muted, marginTop: 4 }}>
         {t(lang, 'generalAvg')}: {data?.general_average ?? '—'}
       </Text>
-      <Link href="/report-card" style={{ marginTop: 12, color: '#c9a227', fontWeight: '700' }}>
-        {t(lang, 'officialCard')}
-        {data?.official_card_available ? ' ✓' : ''} →
-      </Link>
+      <Pressable
+        onPress={() => router.push('/report-card')}
+        style={{
+          marginTop: 14,
+          backgroundColor: data?.official_card_available ? '#0b1f3a' : colors.card,
+          borderWidth: 2,
+          borderColor: '#c9a227',
+          borderRadius: 12,
+          padding: 14,
+        }}
+      >
+          <Text style={{ color: '#c9a227', fontWeight: '800', fontSize: 16 }}>
+            {t(lang, 'officialCard')}
+            {data?.official_card_available ? ' ✓' : ''}
+          </Text>
+          <Text style={{ color: data?.official_card_available ? '#fff' : colors.muted, marginTop: 4 }}>
+            {data?.official_card_available ? t(lang, 'officialCardReady') : t(lang, 'officialCardPending')}
+          </Text>
+      </Pressable>
       {data?.at_risk?.length ? (
         <View style={{ marginTop: 12 }}>
           <Text style={{ color: colors.danger, fontWeight: '700' }}>{t(lang, 'atRisk')}</Text>

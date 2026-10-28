@@ -32,7 +32,7 @@ $strands = cfg()['strands'];
 
 <section class="notice-bar" role="note">
   <div class="container">
-    Public pages never show student names, LRN, photos, or grades. Log in through the portal to see your own records.
+    Public pages never show student names, student number, photos, or grades. Log in through the portal to see your own records.
   </div>
 </section>
 
@@ -45,7 +45,7 @@ $strands = cfg()['strands'];
       $features = [
           ['title' => 'Real-time grade viewing', 'text' => 'See encoded scores as teachers save them — by subject and quarter.'],
           ['title' => 'Per-subject & per-quarter', 'text' => 'Written work, performance tasks, and quarterly assessment in one breakdown.'],
-          ['title' => 'AI-assisted study tools', 'text' => 'Study plans, flashcards, and sample quizzes from class materials — never sending a student’s name or LRN to an outside AI.'],
+          ['title' => 'AI-assisted study tools', 'text' => 'Study plans, flashcards, and sample quizzes from class materials — never sending a student’s name or student number to an outside AI.'],
       ];
       foreach ($features as $f):
       ?>
@@ -108,15 +108,31 @@ $strands = cfg()['strands'];
 
 <section id="apps" class="section">
   <div class="container split">
-    <article class="card">
+    <article class="card download-card">
       <h2>Student mobile app</h2>
       <p>Grades and AI study tools.</p>
-      <p class="badge">Coming soon</p>
+      <div class="qr-block">
+        <img
+          src="<?= e(qr_image_url(download_url('mobile'), 180)) ?>"
+          alt="QR code to download the Holy Face Student mobile app"
+          width="180"
+          height="180"
+        >
+        <p class="qr-caption">Scan to download</p>
+      </div>
     </article>
-    <article class="card">
+    <article class="card download-card">
       <h2>Teacher desktop app</h2>
       <p>Grade encoding and class lists for faculty.</p>
-      <p class="badge">Coming soon</p>
+      <div class="qr-block">
+        <img
+          src="<?= e(qr_image_url(download_url('desktop'), 180)) ?>"
+          alt="QR code to download the Holy Face teacher desktop app"
+          width="180"
+          height="180"
+        >
+        <p class="qr-caption">Scan to download</p>
+      </div>
     </article>
   </div>
   <p class="center mt"><a class="btn btn-navy" href="<?= e(url('apps.php')) ?>">Get the apps</a></p>

@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
 import { t } from '../src/i18n';
+import { notesForAi } from '../src/study/loadContext';
 
 type Q = {
   id: number;
@@ -42,14 +43,16 @@ export default function QuizScreen() {
     });
 
   useEffect(() => {
-    load({
-      tool_type: 'quiz',
-      subject: p.subject,
-      topic: p.topic || p.subject,
-      notes: p.notes,
-      question_count: 8,
-      difficulty: 'medium',
-    }).catch((e) => Alert.alert('Quiz', e.message ?? 'Failed'));
+    notesForAi({ subject: p.subject, topic: p.topic, notes: p.notes }).then((ctx) =>
+      load({
+        tool_type: 'quiz',
+        subject: ctx.subject,
+        topic: ctx.topic || ctx.subject,
+        notes: ctx.notes,
+        question_count: 8,
+        difficulty: 'medium',
+      })
+    ).catch((e) => Alert.alert('Quiz', e.message ?? 'Failed'));
   }, [token]);
 
   const q = qs[i];

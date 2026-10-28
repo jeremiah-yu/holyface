@@ -6,9 +6,6 @@
     "orientation": "portrait",
     "scheme": "holyface",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "backgroundColor": "#0b1f3a"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "school.holyface.student",
@@ -25,10 +22,24 @@
     "plugins": [
       "expo-secure-store",
       "expo-local-authentication",
-      "expo-router"
+      "expo-router",
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b1f3a"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Holy Face Student uses photos only to read class notes you upload.",
+          "cameraPermission": "Holy Face Student uses the camera so you can photograph class notes."
+        }
+      ]
     ],
     "extra": {
-      "apiBaseUrl": "http://192.168.1.10:8089"
+      "apiBaseUrl": "http://192.168.254.103:8089"
     }
   }
 }

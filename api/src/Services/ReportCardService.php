@@ -79,6 +79,21 @@ final class ReportCardService
         return true;
     }
 
+    public function hasCardForUser(int $userId): bool
+    {
+        $pdo = Connection::get();
+        $stmt = $pdo->prepare(
+            'SELECT 1
+             FROM official_report_cards orc
+             INNER JOIN enrollments e ON e.id = orc.enrollment_id
+             INNER JOIN students s ON s.id = e.student_id
+             WHERE s.user_id = ? AND e.status IN ("enrolled","completed")
+             LIMIT 1'
+        );
+        $stmt->execute([$userId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     /** @return array<string, mixed>|null */
     public function cardForUser(int $userId): ?array
     {

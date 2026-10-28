@@ -83,6 +83,39 @@ label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; fon
 }
 .login { max-width: 380px; width: 92%; text-align: center; }
 .login form { text-align: left; display: grid; gap: 0.65rem; }
+.login .password-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: 1px solid #cfd6df;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+.login .password-field input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  border: 0 !important;
+  box-shadow: none;
+  background: transparent;
+  padding: 0.5rem 0.65rem;
+}
+.login .eye-toggle {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--navy) !important;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+.login .eye-toggle:hover { color: var(--gold) !important; background: #f0f3f7 !important; }
 .login .logo { width: 80px; height: 80px; object-fit: contain; }
 .hint { color: var(--muted); font-size: 0.82rem; }
 .error { color: var(--danger); }

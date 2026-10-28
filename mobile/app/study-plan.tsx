@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
 import { t } from '../src/i18n';
+import { notesForAi } from '../src/study/loadContext';
 
 type Task = { id: number; day_no: number; task_text: string; is_done: number };
 type Plan = {
@@ -24,14 +25,15 @@ export default function StudyPlanScreen() {
 
   useEffect(() => {
     (async () => {
+      const ctx = await notesForAi({ subject: p.subject, topic: p.topic, notes: p.notes });
       const res = await apiRequest<{ result: Plan }>('/ai/study', {
         method: 'POST',
         token,
         body: JSON.stringify({
           tool_type: 'study_plan',
-          subject: p.subject,
-          topic: p.topic || p.subject,
-          notes: p.notes,
+          subject: ctx.subject,
+          topic: ctx.topic || ctx.subject,
+          notes: ctx.notes,
           exam_date: p.exam_date,
           hours_per_day: Number(p.hours_per_day || 1.5),
         }),

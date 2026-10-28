@@ -13,7 +13,6 @@ export default function MoreScreen() {
       <Text style={{ color: colors.muted }}>{user?.username}</Text>
       <Row label="Profile" onPress={() => router.push('/profile')} colors={colors} />
       <Row label={t(lang, 'changePassword')} onPress={() => router.push('/change-password')} colors={colors} />
-      <Row label={t(lang, 'correction')} onPress={() => router.push('/correction')} colors={colors} />
       <Row label={t(lang, 'privacyHistory')} onPress={() => router.push('/consent-history')} colors={colors} />
       <Row label="Terms of Use" onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} colors={colors} />
       <Row label="Privacy Policy" onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} colors={colors} />

@@ -31,7 +31,7 @@ $portalUrl = cfg()['portal_url'];
   <meta name="theme-color" content="#0b1f3a">
   <link rel="icon" href="<?= e(url($school['logo'])) ?>">
   <link rel="apple-touch-icon" href="<?= e(url($school['logo'])) ?>">
-  <link rel="stylesheet" href="<?= e(url('assets/css/site.css')) ?>?v=3">
+  <link rel="stylesheet" href="<?= e(url('assets/css/site.css')) ?>?v=4">
   <script type="application/ld+json">
   <?= json_encode([
       '@context' => 'https://schema.org',

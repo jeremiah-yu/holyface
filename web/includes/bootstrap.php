@@ -95,6 +95,25 @@ function abs_url(string $path = ''): string
     return $path === '' ? $site . '/' : $site . '/' . $path;
 }
 
+function download_url(string $kind): string
+{
+    $custom = trim((string) (cfg()['downloads'][$kind] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+    $files = [
+        'mobile' => 'downloads/holyface-student.apk',
+        'desktop' => 'downloads/holyface-teacher-setup.exe',
+    ];
+    return abs_url($files[$kind] ?? 'apps.php');
+}
+
+function qr_image_url(string $data, int $size = 220): string
+{
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' . $size . 'x' . $size
+        . '&ecc=M&margin=10&data=' . rawurlencode($data);
+}
+
 /** Fetch public JSON from the AMGS API. Never used for student records on this site. */
 function amgs_fetch(string $path): array
 {

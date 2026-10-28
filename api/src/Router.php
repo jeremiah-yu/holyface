@@ -225,6 +225,14 @@ final class Router
             $ai->generate($request, $ctx);
             return;
         }
+        if ($path === '/ai/extract-notes' && $method === 'POST') {
+            $ai->extractNotes($request, $ctx);
+            return;
+        }
+        if ($path === '/ai/chat' && $method === 'POST') {
+            $ai->chat($request, $ctx);
+            return;
+        }
         if ($path === '/ai/plan/tasks' && $method === 'GET') {
             $ai->planTasks($request, $ctx);
             return;

@@ -49,6 +49,54 @@ final class AiController
         Response::json(['success' => true, 'result' => $result]);
     }
 
+    public function extractNotes(Request $request, array $auth): void
+    {
+        if ($auth['role'] !== 'student') {
+            Response::error('Students only.', 403);
+            return;
+        }
+        $body = $request->body ?? [];
+        $filename = basename((string) ($body['filename'] ?? 'notes.txt'));
+        $base64 = (string) ($body['content_base64'] ?? '');
+        if ($base64 === '') {
+            Response::error('Choose a notes file first.', 422);
+            return;
+        }
+        try {
+            $text = $this->ai->extractUploadedText($filename, $base64);
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 422);
+            return;
+        }
+        Response::json(['success' => true, 'text' => $text, 'filename' => $filename]);
+    }
+
+    public function chat(Request $request, array $auth): void
+    {
+        if ($auth['role'] !== 'student') {
+            Response::error('Students only.', 403);
+            return;
+        }
+        $body = $request->body ?? [];
+        $input = [
+            'tool_type' => 'chat',
+            'subject' => (string) ($body['subject'] ?? 'Study'),
+            'topic' => (string) ($body['topic'] ?? ''),
+            'notes' => (string) ($body['notes'] ?? ''),
+            'message' => (string) ($body['message'] ?? ''),
+        ];
+        try {
+            $result = $this->ai->generate((int) $auth['user']['id'], $input);
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 422);
+            return;
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), 429);
+            return;
+        }
+        Response::json(['success' => true, 'result' => $result]);
+    }
+
     public function planTasks(Request $request, array $auth): void
     {
         if ($auth['role'] !== 'student') {

@@ -10,6 +10,7 @@ import { cacheGet, cacheSet } from '../../src/storage/cache';
 type DigitalId = {
   full_name: string;
   lrn: string;
+  student_number?: string;
   photo_path: string | null;
   strand_code: string;
   grade_level: number;
@@ -84,7 +85,7 @@ export default function IdScreen() {
             <Text style={styles.official}>{card.school.name}</Text>
             <View style={styles.photo} />
             <Text style={styles.name}>{card.full_name}</Text>
-            <Text style={styles.meta}>LRN: {card.lrn}</Text>
+            <Text style={styles.meta}>Student number: {card.student_number ?? card.lrn}</Text>
             <Text style={styles.meta}>
               Grade {card.grade_level} · {card.strand_code}-{card.section_code}
             </Text>
@@ -106,7 +107,7 @@ export default function IdScreen() {
               <QRCode value={card.qr_token} size={160} />
             </View>
             <Text style={[styles.backText, { fontSize: 11, marginTop: 8 }]}>
-              QR is a short-lived signed pass — not the raw LRN. Staff verify it with the AMGS API.
+              QR is a short-lived signed pass — not the raw student number. Staff verify it with the AMGS API.
             </Text>
           </View>
         )}
@@ -117,7 +118,6 @@ export default function IdScreen() {
       <Pressable onPress={() => setBlockShot(!blockShot)} style={{ marginTop: 8 }}>
         <Text style={{ color: colors.text }}>Screenshot blocking: {blockShot ? 'ON' : 'OFF (optional)'}</Text>
       </Pressable>
-      <Text style={{ color: colors.muted, marginTop: 8 }}>{t(lang, 'addWallet')}</Text>
     </ScrollView>
   );
 }

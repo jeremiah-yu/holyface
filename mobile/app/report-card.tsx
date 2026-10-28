@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
 import { t } from '../src/i18n';
+import { cacheGet, cacheSet } from '../src/storage/cache';
 
 type SubjectRow = {
   title: string;
@@ -45,9 +46,32 @@ export default function ReportCardScreen() {
   const [data, setData] = useState<Payload | null>(null);
 
   useEffect(() => {
-    apiRequest<Payload>('/students/report-card', { token })
-      .then(setData)
-      .catch(() => undefined);
+    let cancelled = false;
+    (async () => {
+      const cached = await cacheGet<Payload>('report_card');
+      if (cached && !cancelled) {
+        setData(cached.value);
+      }
+      try {
+        const fresh = await apiRequest<Payload>('/students/report-card', { token, timeoutMs: 8000 });
+        if (!cancelled) {
+          setData(fresh);
+          await cacheSet('report_card', fresh);
+        }
+      } catch {
+        if (!cancelled && !cached) {
+          setData({
+            available: false,
+            card: null,
+            progress: { total: 0, submitted: 0, missing: [] },
+            message: 'Could not load the grading card. Try again.',
+          });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const card = data?.card;
@@ -80,7 +104,9 @@ export default function ReportCardScreen() {
     <ScrollView contentContainerStyle={{ padding: 16, backgroundColor: colors.bg, flexGrow: 1 }}>
       <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, borderWidth: 2, borderColor: '#c9a227' }}>
         <View style={{ alignItems: 'center', marginBottom: 12 }}>
-          <Image source={{ uri: card.school.logo }} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff' }} />
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#c9a227' }}>
+            <Text style={{ color: '#0b1f3a', fontWeight: '800', fontSize: 16 }}>HF</Text>
+          </View>
           <Text style={{ color: colors.text, fontWeight: '800', textAlign: 'center', marginTop: 8 }}>{card.school.name}</Text>
           <Text style={{ color: '#c9a227', fontWeight: '700', marginTop: 4 }}>OFFICIAL GRADING CARD</Text>
           <Text style={{ color: colors.muted, fontSize: 12 }}>{card.card_number}</Text>

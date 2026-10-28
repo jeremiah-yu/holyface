@@ -4,6 +4,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { useAuth } from '../src/auth/AuthContext';
 import { t } from '../src/i18n';
+import { notesForAi } from '../src/study/loadContext';
 
 type Card = { id?: number; front?: string; back?: string; front_text?: string; back_text?: string };
 
@@ -17,6 +18,7 @@ export default function FlashcardsScreen() {
 
   useEffect(() => {
     (async () => {
+      const ctx = await notesForAi({ subject: p.subject, topic: p.topic, notes: p.notes });
       const res = await apiRequest<{
         result: { session_token: string; data: { cards: Card[]; deck_id?: number } };
       }>('/ai/study', {
@@ -24,9 +26,9 @@ export default function FlashcardsScreen() {
         token,
         body: JSON.stringify({
           tool_type: 'flashcards',
-          subject: p.subject,
-          topic: p.topic || p.subject,
-          notes: p.notes,
+          subject: ctx.subject,
+          topic: ctx.topic || ctx.subject,
+          notes: ctx.notes,
         }),
       });
       setSession(res.result.session_token);
