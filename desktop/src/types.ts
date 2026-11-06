@@ -26,6 +26,13 @@ export type Section = {
   written_work_pct?: string;
   performance_task_pct?: string;
   quarterly_assessment_pct?: string;
+  is_adviser?: number;
+  calendar?: {
+    mode: string;
+    grade_level: number;
+    max_period: number;
+    periods: { id: number; code: string; label: string; short: string }[];
+  };
 };
 
 export type StudentRow = {
@@ -89,6 +96,13 @@ export type Weights = {
 export type GridPayload = {
   class: Record<string, string | number>;
   quarter: number;
+  calendar?: {
+    mode: string;
+    grade_level: number;
+    max_period: number;
+    periods: { id: number; code: string; label: string; short: string }[];
+  };
+  period?: { id: number; code: string; label: string; short: string };
   locked: boolean;
   weights: Weights;
   passing_mark: number;
@@ -124,9 +138,14 @@ declare global {
       exportFile: (opts: {
         defaultName: string;
         content: string;
+        encoding?: 'utf8' | 'base64';
         filters?: { name: string; extensions: string[] }[];
       }) => Promise<{ canceled: boolean; filePath?: string }>;
       printPage: () => Promise<{ ok: boolean }>;
+      amgsFetch: (
+        url: string,
+        init?: { method?: string; headers?: Record<string, string>; body?: string | null }
+      ) => Promise<{ ok: boolean; status: number; data: unknown }>;
     };
   }
 }

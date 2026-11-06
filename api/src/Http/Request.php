@@ -41,6 +41,18 @@ final class Request
         if (isset($_SERVER['CONTENT_TYPE'])) {
             $headers['Content-Type'] = (string) $_SERVER['CONTENT_TYPE'];
         }
+        $auth = (string) (
+            $_SERVER['HTTP_AUTHORIZATION']
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+            ?? ''
+        );
+        if ($auth === '' && function_exists('apache_request_headers')) {
+            $ah = apache_request_headers();
+            $auth = (string) ($ah['Authorization'] ?? $ah['authorization'] ?? '');
+        }
+        if ($auth !== '') {
+            $headers['Authorization'] = $auth;
+        }
 
         $raw = file_get_contents('php://input') ?: '';
         $body = null;

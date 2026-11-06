@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require dirname(__DIR__) . '/includes/bootstrap.php';
+require __DIR__ . '/_init.php';
 render('features', [
     'pageTitle' => 'Features — Holy Face AMGS',
     'pageDescription' => 'Real-time grades and privacy-safe study tools.',

@@ -28,7 +28,7 @@ return [
         'name' => 'HOLY FACE OF JESUS LYCEUM OF SAN JOSE, INC.',
         'short' => 'Holy Face',
         'address' => 'R & J Bldg., Blk 09, Lot 6 & 8, Mayon Ave., Amityville, San Jose, Rodriguez, Rizal, Philippines',
-        'logo' => 'assets/img/hf-seal.png',
+        'logo' => 'assets/img/hf-logo.png',
         'logo_absolute' => 'https://www.holyface.school/assets/img/branding/hf-logo.png',
     ],
     'promise' => 'Track progress. Learn better.',

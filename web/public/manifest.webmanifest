@@ -1,0 +1,30 @@
+{
+  "name": "Holy Face AMGS",
+  "short_name": "Holy Face",
+  "description": "Professor gradebook and Holy Face academic portal",
+  "start_url": "./index.php",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1f3a",
+  "theme_color": "#0b1f3a",
+  "icons": [
+    {
+      "src": "assets/img/hf-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/hf-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Professor login",
+      "url": "./login.php"
+    }
+  ]
+}

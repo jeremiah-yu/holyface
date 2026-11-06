@@ -14,18 +14,18 @@ export default function ScheduleScreen() {
       .catch(() => undefined);
   }, [token]);
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, backgroundColor: colors.bg }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, flexGrow: 1 }}>
       {rows.map((r, i) => (
-        <View key={i} style={{ backgroundColor: colors.card, padding: 12, borderRadius: 10, marginBottom: 8 }}>
-          <Text style={{ color: colors.text, fontWeight: '700' }}>
+        <View key={i} style={{ backgroundColor: colors.card, padding: 12, borderRadius: 10, marginBottom: 8, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ color: colors.ink, fontWeight: '700' }}>
             {r.weekday_name} {r.start_time?.slice(0, 5)}–{r.end_time?.slice(0, 5)}
           </Text>
-          <Text style={{ color: colors.muted }}>
+          <Text style={{ color: colors.sub }}>
             {r.subject} · {r.room}
           </Text>
         </View>
       ))}
-      {!rows.length && <Text style={{ color: colors.muted }}>No schedule encoded yet.</Text>}
+      {!rows.length && <Text style={{ color: colors.sub }}>No schedule encoded yet.</Text>}
     </ScrollView>
   );
 }

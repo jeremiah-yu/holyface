@@ -1,7 +1,11 @@
 Options -Indexes
 RewriteEngine On
 
-ErrorDocument 404 /holyface/web/public/404.php
+# Keep app PHP and assets public; hide the copied includes/templates/config tree.
+RewriteRule ^(includes|templates|shared)/ - [F,L]
+RewriteRule ^config\.php$ - [F,L]
+
+ErrorDocument 404 /404.php
 
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 RewriteRule ^robots\.txt$ robots.php [L]

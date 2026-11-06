@@ -6,13 +6,29 @@ declare(strict_types=1);
  * All pages include this file — never query the database from the public site.
  */
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     session_start([
         'cookie_httponly' => true,
         'cookie_samesite' => 'Lax',
+        'cookie_secure' => $https,
     ]);
 }
 
-$config = require dirname(__DIR__) . '/config.php';
+function web_pkg_root(): string
+{
+    return dirname(__DIR__);
+}
+
+$config = require web_pkg_root() . '/config.php';
+$host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+$isLocal = $host === '' || str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+if (!$isLocal && (str_contains((string) $config['api_base_url'], 'localhost') || $config['api_base_url'] === '')) {
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+        || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+    $config['api_base_url'] = ($https ? 'https://' : 'http://') . $host . '/api/public';
+}
 
 function cfg(): array
 {
@@ -68,6 +84,8 @@ function static_page_name(string $path): string
         'contact.php' => 'index.html',
         'grading.php' => 'index.html',
         'announcements.php' => 'index.html',
+        'login.php' => 'teacher-app/index.html',
+        'teacher-portal.php' => 'teacher-app/index.html',
         '404.php' => '404.html',
     ];
     return $map[$file] ?? $file;
@@ -95,17 +113,24 @@ function abs_url(string $path = ''): string
     return $path === '' ? $site . '/' : $site . '/' . $path;
 }
 
+function professor_workspace_url(): string
+{
+    if (getenv('AMGS_STATIC_EXPORT') === '1') {
+        return url('teacher-app/index.html');
+    }
+    return url('teacher-portal.php');
+}
+
 function download_url(string $kind): string
 {
     $custom = trim((string) (cfg()['downloads'][$kind] ?? ''));
     if ($custom !== '') {
         return $custom;
     }
-    $files = [
-        'mobile' => 'downloads/holyface-student.apk',
-        'desktop' => 'downloads/holyface-teacher-setup.exe',
-    ];
-    return abs_url($files[$kind] ?? 'apps.php');
+    if ($kind === 'mobile' || $kind === 'desktop') {
+        return abs_url('download.php?app=' . $kind);
+    }
+    return abs_url('apps.php');
 }
 
 function qr_image_url(string $data, int $size = 220): string
@@ -114,14 +139,111 @@ function qr_image_url(string $data, int $size = 220): string
         . '&ecc=M&margin=10&data=' . rawurlencode($data);
 }
 
+/** @return list<string> */
+function amgs_api_bases(): array
+{
+    $bases = [rtrim((string) (cfg()['api_base_url'] ?? ''), '/')];
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    if ($host === '' || str_contains($host, 'localhost') || str_contains($host, '127.0.0.1')) {
+        $bases[] = 'http://localhost:8089';
+        $bases[] = 'http://localhost/holyface/api/public';
+    }
+    return array_values(array_unique(array_filter($bases)));
+}
+
+function amgs_api_root(): string
+{
+    $candidates = [
+        dirname(__DIR__, 2) . '/api',
+        web_pkg_root() . '/api',
+    ];
+    foreach ($candidates as $dir) {
+        if (is_readable($dir . '/src/Router.php')) {
+            return $dir;
+        }
+    }
+    return $candidates[0];
+}
+
+function amgs_boot_api(): bool
+{
+    static $booted = false;
+    if ($booted) {
+        return true;
+    }
+    $api = amgs_api_root();
+    if (!is_readable($api . '/src/Router.php')) {
+        return false;
+    }
+    spl_autoload_register(static function (string $class) use ($api): void {
+        $prefix = 'HolyFace\\Api\\';
+        if (!str_starts_with($class, $prefix)) {
+            return;
+        }
+        $relative = substr($class, strlen($prefix));
+        $path = $api . '/src/' . str_replace('\\', '/', $relative) . '.php';
+        if (is_readable($path)) {
+            require $path;
+        }
+    });
+    \HolyFace\Api\Config\Env::load($api . '/.env');
+    $booted = true;
+    return true;
+}
+
+/**
+ * Call the REST API in-process (InfinityFree blocks outbound HTTP).
+ *
+ * @param array<string, mixed>|null $payload
+ * @return array<string, mixed>
+ */
+function amgs_local_dispatch(string $method, string $path, ?array $payload = null, ?string $token = null): array
+{
+    if (!amgs_boot_api()) {
+        return [];
+    }
+    $query = [];
+    $parsed = parse_url($path);
+    $route = (string) ($parsed['path'] ?? $path);
+    if (!empty($parsed['query'])) {
+        parse_str((string) $parsed['query'], $query);
+    }
+    $headers = ['Accept' => 'application/json'];
+    if ($token !== null && $token !== '') {
+        $headers['Authorization'] = 'Bearer ' . $token;
+    }
+    if ($payload !== null) {
+        $headers['Content-Type'] = 'application/json';
+    }
+    $request = new \HolyFace\Api\Http\Request(
+        strtoupper($method),
+        $route,
+        $query,
+        $payload,
+        $headers,
+        (string) ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'),
+        'amgs-web'
+    );
+    ob_start();
+    try {
+        (new \HolyFace\Api\Router())->dispatch($request);
+    } catch (\Throwable) {
+        ob_end_clean();
+        return [];
+    }
+    $raw = ob_get_clean();
+    $data = json_decode((string) $raw, true);
+    return is_array($data) ? $data : [];
+}
+
 /** Fetch public JSON from the AMGS API. Never used for student records on this site. */
 function amgs_fetch(string $path): array
 {
-    $bases = array_values(array_unique(array_filter([
-        rtrim((string) (cfg()['api_base_url'] ?? ''), '/'),
-        'http://localhost:8089',
-        'http://localhost/holyface/api/public',
-    ])));
+    $local = amgs_local_dispatch('GET', $path);
+    if ($local !== []) {
+        return $local;
+    }
+    $bases = amgs_api_bases();
     $ctx = stream_context_create([
         'http' => [
             'timeout' => 4,
@@ -150,11 +272,11 @@ function amgs_fetch(string $path): array
  */
 function amgs_post(string $path, array $payload): array
 {
-    $bases = array_values(array_unique(array_filter([
-        rtrim((string) (cfg()['api_base_url'] ?? ''), '/'),
-        'http://localhost:8089',
-        'http://localhost/holyface/api/public',
-    ])));
+    $local = amgs_local_dispatch('POST', $path, $payload);
+    if ($local !== []) {
+        return $local;
+    }
+    $bases = amgs_api_bases();
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
     foreach ($bases as $apiBase) {
         $ctx = stream_context_create([
@@ -221,8 +343,19 @@ function legal_catalog(): array
 {
     static $catalog = null;
     if ($catalog === null) {
+        $candidates = [
+            dirname(__DIR__, 2) . '/shared/legal/policies.php',
+            web_pkg_root() . '/shared/legal/policies.php',
+        ];
+        $path = $candidates[0];
+        foreach ($candidates as $candidate) {
+            if (is_readable($candidate)) {
+                $path = $candidate;
+                break;
+            }
+        }
         /** @var array<string, mixed> $catalog */
-        $catalog = require dirname(__DIR__, 2) . '/shared/legal/policies.php';
+        $catalog = require $path;
     }
     return $catalog;
 }
@@ -235,11 +368,11 @@ function legal_catalog(): array
  */
 function amgs_auth(string $method, string $path, string $token, ?array $payload = null): array
 {
-    $bases = array_values(array_unique(array_filter([
-        rtrim((string) (cfg()['api_base_url'] ?? ''), '/'),
-        'http://localhost:8089',
-        'http://localhost/holyface/api/public',
-    ])));
+    $local = amgs_local_dispatch($method, $path, $payload, $token);
+    if ($local !== []) {
+        return $local;
+    }
+    $bases = amgs_api_bases();
     $headers = "Accept: application/json\r\nAuthorization: Bearer {$token}\r\n";
     $http = [
         'method' => $method,
@@ -289,7 +422,7 @@ function render(string $view, array $vars = []): void
     $config = cfg();
     $school = $config['school'];
     extract($vars, EXTR_SKIP);
-    require dirname(__DIR__) . '/templates/header.php';
-    require dirname(__DIR__) . '/templates/' . $view . '.php';
-    require dirname(__DIR__) . '/templates/footer.php';
+    require web_pkg_root() . '/templates/header.php';
+    require web_pkg_root() . '/templates/' . $view . '.php';
+    require web_pkg_root() . '/templates/footer.php';
 }

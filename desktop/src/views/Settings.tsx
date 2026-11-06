@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../api';
+import { lockLabel } from '../calendar';
 import type { PolicyBundle, PolicyDoc } from '../legal';
 
 type Profile = {
@@ -51,7 +52,6 @@ export default function Settings({ token }: { token: string }) {
       method: 'PUT',
       body: JSON.stringify({
         passing_mark: fd.get('passing_mark'),
-        drop_points: fd.get('drop_points'),
         inactivity_minutes: fd.get('inactivity_minutes'),
       }),
     });
@@ -89,10 +89,6 @@ export default function Settings({ token }: { token: string }) {
         <label>
           Passing mark
           <input name="passing_mark" defaultValue={data.settings.passing_mark?.value} disabled={!data.can_edit} />
-        </label>
-        <label>
-          Drop points
-          <input name="drop_points" defaultValue={data.settings.drop_points?.value} disabled={!data.can_edit} />
         </label>
         <label>
           Auto-logout (minutes)
@@ -180,7 +176,7 @@ export default function Settings({ token }: { token: string }) {
         <thead>
           <tr>
             <th>School year</th>
-            <th>Quarter</th>
+            <th>Period</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -189,7 +185,7 @@ export default function Settings({ token }: { token: string }) {
           {data.locks.map((l) => (
             <tr key={`${l.school_year_id}-${l.quarter}`}>
               <td>{l.school_year}</td>
-              <td>Q{l.quarter}</td>
+              <td>{lockLabel(l.quarter)}</td>
               <td>{l.is_locked ? 'Locked' : 'Open'}</td>
               <td>
                 {data.can_edit && (

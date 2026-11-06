@@ -65,7 +65,7 @@ final class SettingsController
 
         $body = $request->body ?? [];
         $pdo = Connection::get();
-        $allowed = ['passing_mark', 'early_warning_threshold', 'drop_points', 'inactivity_minutes'];
+        $allowed = ['passing_mark', 'inactivity_minutes'];
         foreach ($allowed as $key) {
             if (!array_key_exists($key, $body)) {
                 continue;

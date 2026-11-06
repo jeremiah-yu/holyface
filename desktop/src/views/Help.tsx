@@ -3,7 +3,7 @@ export default function Help() {
     <div className="card help-card">
       <h2>How grades are computed</h2>
       <p>
-        Rules follow <strong>DepEd Order No. 8, s. 2015</strong> (Policy Guidelines on Classroom Assessment). Weights
+        Encode scores in this teacher workspace. Rules follow <strong>DepEd Order No. 8, s. 2015</strong> (Policy Guidelines on Classroom Assessment). Weights
         and the transmutation table are stored in the database so the Registrar can change them without a software
         update. Work Immersion / Research / performance-heavy weights stay unconfirmed until the school sets them.
       </p>
@@ -24,8 +24,21 @@ export default function Help() {
       <h3>4. Quarterly Grade</h3>
       <p>Initial Grade is converted using the school’s transmutation table (default: DepEd Appendix 2 bands).</p>
 
-      <h3>5. Final Grade (semester subject)</h3>
-      <p>Average of the two quarterly grades, rounded to the nearest whole number.</p>
+      <h3>5. Final Grade</h3>
+      <p>
+        <strong>Grade 12</strong> still uses two semesters: Sem 1 = average of Q1 and Q2; Sem 2 = average of Q3 and Q4;
+        Final = average of the two semester grades, rounded.
+      </p>
+      <p>
+        <strong>Grade 11 (MATATAG)</strong> uses three terms. Final = average of Term 1, Term 2, and Term 3, rounded.
+        There is no semester column for Grade 11.
+      </p>
+      <h3>Official cards</h3>
+      <p>
+        Subject teachers submit finals. The <strong>class adviser</strong> generates the cards and releases them at PTC.
+        The Registrar keeps the final records and does not issue cards. Students see a released card on the mobile app
+        (including modular students who cannot come to school).
+      </p>
 
       <h3>6. General Average</h3>
       <p>Average of final grades across subjects. Passed / Failed uses the stored passing mark (default 75).</p>

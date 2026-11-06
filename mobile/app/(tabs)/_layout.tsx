@@ -3,7 +3,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { t } from '../../src/i18n';
 
 export default function TabsLayout() {
-  const { lang } = useAuth();
+  const { lang, colors } = useAuth();
   return (
     <Tabs
       screenOptions={{
@@ -12,6 +12,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#c9a227',
         tabBarInactiveTintColor: '#8a93a0',
         tabBarStyle: { backgroundColor: '#0b1f3a' },
+        sceneStyle: { backgroundColor: colors.bg },
       }}
     >
       <Tabs.Screen name="id" options={{ title: t(lang, 'id') }} />

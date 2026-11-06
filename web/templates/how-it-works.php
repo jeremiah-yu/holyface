@@ -13,8 +13,8 @@
         <p>Complete SHS enrollment with the Registrar. After enrollment is confirmed, the Registrar creates the learner’s AMGS account.</p>
       </li>
       <li>
-        <h2>2. Teachers encode in the desktop app</h2>
-        <p>Faculty enter Written Work, Performance Tasks, and Quarterly Assessment scores. The system computes the quarter grade using school weights. Every change is audit-logged (who, when, old value, new value).</p>
+        <h2>2. Professors encode in the web workspace</h2>
+        <p>Faculty enter Written Work, Performance Tasks, and Quarterly Assessment scores in the browser. The system computes the quarter grade using school weights. Every change is audit-logged (who, when, old value, new value).</p>
       </li>
       <li>
         <h2>3. Students check progress</h2>
@@ -23,7 +23,8 @@
     </ol>
     <div class="role-grid mt">
       <article class="card"><h3>Student — mobile</h3><p>Grades and study tools.</p></article>
-      <article class="card"><h3>Teacher — desktop</h3><p>Encoding, class lists, computed grades.</p></article>
+      <article class="card"><h3>Professor — web</h3><p>Encoding, class lists, computed grades.</p></article>
+      <article class="card"><h3>Registrar — desktop</h3><p>File vault, accounts, locks, audit logs.</p></article>
     </div>
   </div>
 </section>

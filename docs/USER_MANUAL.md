@@ -45,9 +45,9 @@ Change all passwords before any production use.
 2. Select **school year, quarter, strand, section, and subject**. Teachers see only their own assignments; Registrar sees all.
 3. **Class list** — searchable/sortable roster with photo, LRN, name, and current grade.
 4. **Grade grid** — spreadsheet (rows = students, columns = WW / PT / QA items). Keyboard arrows, Excel paste, autosave. Type `ABS` / `EXC` for absent / excused. Scores cannot exceed the item’s highest possible score. Every edit is written to `grade_audit_logs`. Locked quarters cannot be edited unless the Registrar unlocks them.
-5. **Dashboard** — class average, highest, lowest, passing rate, distribution. **Early warning** flags students below 78 (configurable) or with a sharp quarter drop.
+5. **Dashboard** — class average, highest, lowest, passing rate, and distribution.
 6. **Reports** — print/export class record, report of grades, missing-grades list. Registrar **All students** view exports Excel (CSV) and PDF.
-7. **Settings** — Registrar edits component weights by subject category, passing mark, early-warning threshold, and lock/unlock grading periods. Work Immersion / Research / performance-heavy weights stay unconfirmed until the school sets them.
+7. **Settings** — Registrar edits component weights by subject category, passing mark, and lock/unlock grading periods. Work Immersion / Research / performance-heavy weights stay unconfirmed until the school sets them.
 8. **Help** — computation rules plus a worked example.
 9. Offline: grades are cached in **encrypted** local storage (Windows DPAPI via Electron `safeStorage`) with a visible sync queue. Auto-logout after inactivity (default 15 minutes). Confirm before **Submit final grades**.
 

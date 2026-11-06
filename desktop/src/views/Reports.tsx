@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { calendarForGrade, periodLabel } from '../calendar';
 import { toCsv } from '../compute';
 import type { GridPayload, Section } from '../types';
 
@@ -48,7 +49,13 @@ export default function Reports({
     w.print();
   }
 
-  const cls = `G${section.grade_level} ${section.strand}-${section.section_code} · ${section.subject_title} · Q${quarter}`;
+  const cal = calendarForGrade(section.grade_level);
+  const periodName = periodLabel(section.grade_level, quarter);
+  const cls = `G${section.grade_level} ${section.strand}-${section.section_code} · ${section.subject_title} · ${periodName}`;
+  const gradeHeads =
+    cal.mode === 'terms'
+      ? ['T1', 'T2', 'T3', 'Final', 'Action']
+      : ['Q1', 'Q2', 'Sem 1', 'Q3', 'Q4', 'Sem 2', 'Final', 'Action'];
 
   return (
     <div className="card">
@@ -111,19 +118,23 @@ export default function Reports({
         </button>
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
+            const bodyRows = grid.students
+              .map((s) => {
+                const cells =
+                  cal.mode === 'terms'
+                    ? [s.q1, s.q2, s.q3, s.final_rating, s.action_taken]
+                    : [s.q1, s.q2, s.sem1, s.q3, s.q4, s.sem2, s.final_rating, s.action_taken];
+                return `<tr><td>${s.lrn}</td><td>${s.full_name}</td>${cells.map((c) => `<td>${c ?? ''}</td>`).join('')}</tr>`;
+              })
+              .join('');
             printHtml(
               'Report of grades',
-              `<h1>Report of Grades</h1><h2>${cls}</h2>
-               <table><thead><tr><th>Student number</th><th>Name</th><th>Q1</th><th>Q2</th><th>Sem 1</th><th>Q3</th><th>Q4</th><th>Sem 2</th><th>Final</th><th>Action</th></tr></thead><tbody>
-               ${grid.students
-                 .map(
-                   (s) =>
-                     `<tr><td>${s.lrn}</td><td>${s.full_name}</td><td>${s.q1 ?? ''}</td><td>${s.q2 ?? ''}</td><td>${s.sem1 ?? ''}</td><td>${s.q3 ?? ''}</td><td>${s.q4 ?? ''}</td><td>${s.sem2 ?? ''}</td><td>${s.final_rating ?? ''}</td><td>${s.action_taken ?? ''}</td></tr>`
-                 )
-                 .join('')}</tbody></table>`
-            )
-          }
+              `<h1>Report of Grades</h1><h2>${cls}</h2><table><thead><tr><th>Student number</th><th>Name</th>${gradeHeads
+                .map((h) => `<th>${h}</th>`)
+                .join('')}</tr></thead><tbody>${bodyRows}</tbody></table>`
+            );
+          }}
         >
           Print report of grades
         </button>

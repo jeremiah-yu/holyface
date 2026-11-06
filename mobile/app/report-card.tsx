@@ -15,6 +15,7 @@ type SubjectRow = {
   sem2: number | null;
   final_rating: number | null;
   action_taken: string | null;
+  periods?: { code: string; label: string; grade: number | null }[];
 };
 
 type Card = {
@@ -22,6 +23,8 @@ type Card = {
   issued_at: string;
   general_average: number;
   remarks: string;
+  honor?: string | null;
+  section_rank?: number | null;
   school: { name: string; address: string; logo: string };
   student: {
     full_name: string;
@@ -30,15 +33,20 @@ type Card = {
     grade_level: number;
     section_code: string;
     school_year: string;
+    date_of_birth?: string | null;
+    age?: number | null;
+    adviser_name?: string | null;
   };
+  calendar?: { periods: { id: number; code: string; label: string }[] };
   subjects: SubjectRow[];
 };
 
 type Payload = {
   available: boolean;
   card: Card | null;
-  progress: { total: number; submitted: number; missing: string[] };
+  progress: { total: number; submitted: number; missing: string[]; generated?: boolean; released?: boolean };
   message: string;
+  status?: string;
 };
 
 export default function ReportCardScreen() {
@@ -87,7 +95,9 @@ export default function ReportCardScreen() {
     return (
       <ScrollView contentContainerStyle={{ padding: 16, backgroundColor: colors.bg, flexGrow: 1 }}>
         <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{t(lang, 'officialCard')}</Text>
-        <Text style={{ color: colors.muted, marginTop: 10 }}>{t(lang, 'officialCardPending')}</Text>
+        <Text style={{ color: colors.muted, marginTop: 10 }}>
+          {data.status === 'generated' ? t(lang, 'officialCardWaitingRelease') : data.message || t(lang, 'officialCardPending')}
+        </Text>
         <Text style={{ color: colors.text, marginTop: 14, fontWeight: '700' }}>
           {data.progress.submitted}/{data.progress.total} {t(lang, 'submittedOf')}
         </Text>
@@ -116,14 +126,32 @@ export default function ReportCardScreen() {
         <Text style={{ color: colors.muted }}>
           G{card.student.grade_level} {card.student.strand_code}-{card.student.section_code} · {card.student.school_year}
         </Text>
+        {card.student.date_of_birth ? (
+          <Text style={{ color: colors.muted }}>
+            Birthday {card.student.date_of_birth}
+            {card.student.age != null ? ` · Age ${card.student.age}` : ''}
+          </Text>
+        ) : null}
+        {card.student.adviser_name ? (
+          <Text style={{ color: colors.muted }}>Adviser: {card.student.adviser_name}</Text>
+        ) : null}
 
         <View style={{ marginTop: 14, borderTopWidth: 1, borderColor: colors.border, paddingTop: 8 }}>
-          <Row head colors={colors} cells={['Subject', 'Q1', 'Q2', 'Final']} />
+          <Row
+            head
+            colors={colors}
+            cells={['Subject', ...(card.calendar?.periods.map((p) => p.code) ?? ['T1', 'T2', 'T3']), 'Final']}
+          />
           {card.subjects.map((s) => (
             <Row
               key={s.title}
               colors={colors}
-              cells={[s.title, fmt(s.q1), fmt(s.q2), fmt(s.final_rating)]}
+              cells={[
+                s.title,
+                ...(s.periods?.map((p) => fmt(p.grade)) ??
+                  (card.calendar?.periods ?? []).map((p) => fmt((s as Record<string, number | null>)[`q${p.id}`] ?? null))),
+                fmt(s.final_rating),
+              ]}
             />
           ))}
         </View>
@@ -132,8 +160,10 @@ export default function ReportCardScreen() {
           {t(lang, 'generalAvg')}: {card.general_average}
         </Text>
         <Text style={{ color: card.remarks === 'PASSED' ? colors.ok : colors.danger, fontWeight: '700' }}>{card.remarks}</Text>
+        {card.honor ? <Text style={{ color: '#c9a227', fontWeight: '700' }}>{card.honor}</Text> : null}
+        {card.section_rank ? <Text style={{ color: colors.muted }}>Rank {card.section_rank}</Text> : null}
         <Text style={{ color: colors.muted, fontSize: 12, marginTop: 10 }}>
-          Issued {card.issued_at.slice(0, 10)}. Official grades come from the Registrar’s records.
+          Released {card.issued_at.slice(0, 10)}. Official card from your class adviser.
         </Text>
       </View>
     </ScrollView>
@@ -154,11 +184,21 @@ function Row({
   head?: boolean;
 }) {
   return (
-    <View style={{ flexDirection: 'row', paddingVertical: 6, gap: 6 }}>
-      <Text style={{ flex: 2.2, color: colors.text, fontWeight: head ? '700' : '500', fontSize: 12 }}>{cells[0]}</Text>
-      <Text style={{ flex: 0.6, color: colors.text, fontWeight: head ? '700' : '500', fontSize: 12, textAlign: 'center' }}>{cells[1]}</Text>
-      <Text style={{ flex: 0.6, color: colors.text, fontWeight: head ? '700' : '500', fontSize: 12, textAlign: 'center' }}>{cells[2]}</Text>
-      <Text style={{ flex: 0.7, color: colors.text, fontWeight: head ? '700' : '500', fontSize: 12, textAlign: 'center' }}>{cells[3]}</Text>
+    <View style={{ flexDirection: 'row', paddingVertical: 6, gap: 4 }}>
+      {cells.map((cell, i) => (
+        <Text
+          key={`${cell}-${i}`}
+          style={{
+            flex: i === 0 ? 2.2 : 0.7,
+            color: colors.text,
+            fontWeight: head ? '700' : '500',
+            fontSize: 11,
+            textAlign: i === 0 ? 'left' : 'center',
+          }}
+        >
+          {cell}
+        </Text>
+      ))}
     </View>
   );
 }

@@ -29,9 +29,13 @@ $portalUrl = cfg()['portal_url'];
   <meta name="twitter:title" content="<?= e($pageTitle) ?>">
   <meta name="twitter:description" content="<?= e($pageDescription) ?>">
   <meta name="theme-color" content="#0b1f3a">
-  <link rel="icon" href="<?= e(url($school['logo'])) ?>">
-  <link rel="apple-touch-icon" href="<?= e(url($school['logo'])) ?>">
-  <link rel="stylesheet" href="<?= e(url('assets/css/site.css')) ?>?v=4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Holy Face AMGS">
+  <link rel="manifest" href="<?= e(url('manifest.webmanifest')) ?>">
+  <link rel="icon" href="<?= e(url('assets/img/hf-logo.png')) ?>?v=2">
+  <link rel="apple-touch-icon" href="<?= e(url('assets/img/hf-logo.png')) ?>?v=2">
+  <link rel="stylesheet" href="<?= e(url('assets/css/site.css')) ?>?v=5">
   <script type="application/ld+json">
   <?= json_encode([
       '@context' => 'https://schema.org',
@@ -56,7 +60,7 @@ $portalUrl = cfg()['portal_url'];
 <header class="site-header">
   <div class="container header-inner">
     <a class="brand" href="<?= e(url('index.php')) ?>">
-      <img src="<?= e(url($school['logo'])) ?>" alt="Holy Face of Jesus Lyceum logo" width="52" height="52">
+      <img src="<?= e(url($school['logo'])) ?>?v=2" alt="Holy Face of Jesus Lyceum logo" width="52" height="52">
       <span class="brand-text">
         <strong>Holy Face</strong>
         <small>Academic Monitoring &amp; Grading</small>
@@ -72,6 +76,7 @@ $portalUrl = cfg()['portal_url'];
         <li><a href="<?= e(url('how-it-works.php')) ?>" <?= $nav === 'how' ? 'aria-current="page"' : '' ?>>How it works</a></li>
         <li><a href="<?= e(url('strands.php')) ?>" <?= $nav === 'strands' ? 'aria-current="page"' : '' ?>>Strands</a></li>
         <li><a href="<?= e(url('apps.php')) ?>" <?= $nav === 'apps' ? 'aria-current="page"' : '' ?>>Apps</a></li>
+        <li><a href="<?= e(professor_workspace_url()) ?>">Professor login</a></li>
         <li><a class="btn btn-gold btn-sm" href="<?= e($portalUrl) ?>" rel="noopener">Portal Login</a></li>
       </ul>
     </nav>

@@ -5,11 +5,15 @@ const LOGO = 'https://www.holyface.school/assets/img/branding/hf-logo.png';
 export default function Login({
   onLogin,
   error,
+  subtitle = 'Professor workspace',
+  defaultUsername = 'mreyes',
 }: {
   onLogin: (username: string, password: string) => Promise<void>;
   error: string;
+  subtitle?: string;
+  defaultUsername?: string;
 }) {
-  const [username, setUsername] = useState('mreyes');
+  const [username, setUsername] = useState(defaultUsername);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -29,7 +33,7 @@ export default function Login({
       <div className="card login">
         <img src={LOGO} alt="Holy Face of Jesus Lyceum of San Jose" className="logo" />
         <h2>Holy Face AMGS</h2>
-        <p>Teacher desktop</p>
+        <p>{subtitle}</p>
         <form onSubmit={submit}>
           <label>
             Username

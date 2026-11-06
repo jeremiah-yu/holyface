@@ -8,6 +8,9 @@ export const light = {
   danger: '#b42318',
   ok: '#0f5c38',
   border: '#d5dde6',
+  link: '#0b1f3a',
+  ink: '#0b1f3a',
+  sub: '#243140',
 };
 
 export const dark = {
@@ -20,6 +23,9 @@ export const dark = {
   danger: '#f5a09a',
   ok: '#7dcea0',
   border: '#243044',
+  link: '#f6e27a',
+  ink: '#f4f7fb',
+  sub: '#d5deea',
 };
 
 export type Palette = typeof light;

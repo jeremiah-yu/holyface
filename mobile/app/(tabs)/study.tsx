@@ -128,10 +128,10 @@ export default function StudyHub() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, backgroundColor: colors.bg, flexGrow: 1 }}>
-      <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700' }}>AI study tools</Text>
-      <Text style={{ color: colors.muted, marginVertical: 8 }}>{t(lang, 'aiLabel')}</Text>
-      <Text style={{ color: colors.muted, marginBottom: 8 }}>{t(lang, 'uploadHint')}</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, flexGrow: 1 }}>
+      <Text style={{ color: colors.ink, fontSize: 20, fontWeight: '700' }}>AI study tools</Text>
+      <Text style={{ color: colors.sub, marginVertical: 8 }}>{t(lang, 'aiLabel')}</Text>
+      <Text style={{ color: colors.sub, marginBottom: 8 }}>{t(lang, 'uploadHint')}</Text>
       <Pressable onPress={chooseUpload} disabled={busy} style={btn}>
         <Text style={btnTxt}>{busy ? 'Reading file…' : t(lang, 'uploadNotes')}</Text>
       </Pressable>
@@ -141,24 +141,41 @@ export default function StudyHub() {
         </Text>
       ) : null}
 
-      <Text style={{ color: colors.text, fontWeight: '600', marginTop: 16 }}>Subject</Text>
-      {subjects.map((s) => (
-        <Pressable key={s.id} onPress={() => setSubject(s.title)}>
-          <Text style={{ color: subject === s.title ? '#c9a227' : colors.text, paddingVertical: 4 }}>{s.title}</Text>
-        </Pressable>
-      ))}
-      <TextInput placeholder="Or type a subject" value={subject} onChangeText={setSubject} style={field(colors)} />
-      <TextInput placeholder="Topic" value={topic} onChangeText={setTopic} style={field(colors)} />
+      <Text style={{ color: colors.ink, fontWeight: '700', marginTop: 16 }}>Subject</Text>
+      {subjects.map((s) => {
+        const on = subject === s.title;
+        return (
+          <Pressable
+            key={s.id}
+            onPress={() => setSubject(s.title)}
+            style={{
+              marginTop: 6,
+              paddingVertical: 8,
+              paddingHorizontal: 10,
+              borderRadius: 8,
+              backgroundColor: on ? '#0b1f3a' : colors.card,
+              borderWidth: 1,
+              borderColor: on ? '#c9a227' : colors.border,
+            }}
+          >
+            <Text style={{ color: on ? '#f6e27a' : colors.ink, fontWeight: on ? '700' : '500' }}>{s.title}</Text>
+          </Pressable>
+        );
+      })}
+      <TextInput placeholder="Or type a subject" placeholderTextColor={colors.sub} value={subject} onChangeText={setSubject} style={field(colors)} />
+      <TextInput placeholder="Topic" placeholderTextColor={colors.sub} value={topic} onChangeText={setTopic} style={field(colors)} />
       <TextInput
         placeholder="Notes from your file appear here (no names or student number)"
+        placeholderTextColor={colors.sub}
         value={notes}
         onChangeText={setNotes}
         multiline
         style={{ ...field(colors), minHeight: 100 }}
       />
-      <TextInput placeholder="Exam date YYYY-MM-DD" value={exam} onChangeText={setExam} style={field(colors)} />
+      <TextInput placeholder="Exam date YYYY-MM-DD" placeholderTextColor={colors.sub} value={exam} onChangeText={setExam} style={field(colors)} />
       <TextInput
         placeholder="Hours per day"
+        placeholderTextColor={colors.sub}
         value={hours}
         onChangeText={setHours}
         keyboardType="decimal-pad"
@@ -173,7 +190,7 @@ export default function StudyHub() {
       <Pressable onPress={() => go('study_plan')} style={btn}>
         <Text style={btnTxt}>Study plan</Text>
       </Pressable>
-      <Text style={{ color: colors.muted, marginTop: 16, fontSize: 12 }}>
+      <Text style={{ color: colors.sub, marginTop: 16, fontSize: 12 }}>
         Gemini reads the uploaded notes only. Your name and student number are never sent.
       </Text>
       <View style={{ height: 24 }} />
@@ -181,12 +198,12 @@ export default function StudyHub() {
   );
 }
 
-function field(colors: { border: string; card: string; text: string }) {
+function field(colors: { border: string; card: string; ink: string }) {
   return {
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.card,
-    color: colors.text,
+    color: colors.ink,
     padding: 10,
     borderRadius: 8,
     marginTop: 8,

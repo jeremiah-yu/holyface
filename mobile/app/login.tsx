@@ -6,7 +6,7 @@ import { PasswordField } from '../src/components/PasswordField';
 import { t } from '../src/i18n';
 
 export default function LoginScreen() {
-  const { login, lang, colors } = useAuth();
+  const { login, loginWithBiometric, biometricEnabled, biometricReady, lang, colors } = useAuth();
   const [id, setId] = useState('s001');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -42,6 +42,25 @@ export default function LoginScreen() {
       />
       <Text style={[styles.label, { color: colors.text }]}>{t(lang, 'password')}</Text>
       <PasswordField value={password} onChangeText={setPassword} colors={colors} autoComplete="password" />
+      {biometricEnabled || biometricReady ? (
+        <Pressable
+          style={styles.btn}
+          disabled={busy}
+          onPress={async () => {
+            setBusy(true);
+            try {
+              const ok = await loginWithBiometric();
+              if (ok) router.replace('/');
+            } catch (e: unknown) {
+              Alert.alert('Biometrics', (e as { message?: string }).message ?? 'Failed');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <Text style={styles.btnText}>{t(lang, 'biometricLogin')}</Text>
+        </Pressable>
+      ) : null}
       <Pressable style={styles.btn} onPress={onLogin} disabled={busy}>
         <Text style={styles.btnText}>{busy ? '…' : t(lang, 'login')}</Text>
       </Pressable>

@@ -7,6 +7,7 @@ use HolyFace\Api\Database\Connection;
 use HolyFace\Api\Http\Request;
 use HolyFace\Api\Http\Response;
 use HolyFace\Api\Security\JwtService;
+use HolyFace\Api\Services\AcademicCalendar;
 use HolyFace\Api\Services\ConsentService;
 use HolyFace\Api\Services\ReportCardService;
 use PDO;
@@ -133,7 +134,7 @@ final class StudentController
         }
         $pdo = Connection::get();
         $stmt = $pdo->prepare(
-            'SELECT sub.id AS subject_id, sub.title AS subject, sub.subject_code,
+            'SELECT sub.id AS subject_id, sub.title AS subject, sub.subject_code, s.grade_level,
                     g.quarter, g.transmuted_grade, g.remarks,
                     fg.q1, fg.q2, fg.q3, fg.q4, fg.final_rating, fg.action_taken
              FROM students s
@@ -148,22 +149,8 @@ final class StudentController
         $stmt->execute([(int) $auth['user']['id']]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $warn = 75.0;
-        $critical = 72.0;
-        try {
-            $t = $pdo->query('SELECT warn_below, critical_below FROM early_warning_thresholds WHERE code = "quarter_grade" LIMIT 1');
-            $th = $t?->fetch(PDO::FETCH_ASSOC);
-            if ($th) {
-                $warn = (float) $th['warn_below'];
-                $critical = (float) $th['critical_below'];
-            }
-        } catch (\Throwable) {
-            // table may not exist yet
-        }
-
         $bySubject = [];
         $finals = [];
-        $atRisk = [];
         foreach ($rows as $row) {
             $code = $row['subject_code'];
             if (!isset($bySubject[$code])) {
@@ -185,16 +172,6 @@ final class StudentController
                     'grade' => $g,
                     'remarks' => $row['remarks'],
                 ];
-                if ($g !== null && $g < $warn) {
-                    $level = $g < $critical ? 'critical' : 'warn';
-                    $atRisk[] = [
-                        'subject' => $row['subject'],
-                        'grade' => $g,
-                        'quarter' => (int) $row['quarter'],
-                        'level' => $level,
-                        'badge' => 'At risk in ' . $row['subject'] . ': ' . $g,
-                    ];
-                }
             }
         }
 
@@ -215,20 +192,25 @@ final class StudentController
         }
 
         $cardAvailable = false;
+        $progress = ['generated' => false, 'released' => false];
         try {
             $cardAvailable = $this->reportCards->hasCardForUser((int) $auth['user']['id']);
+            $progress = $this->reportCards->progressForUser((int) $auth['user']['id']);
         } catch (\Throwable) {
             $cardAvailable = false;
         }
+
+        $gradeLevel = (int) ($rows[0]['grade_level'] ?? 12);
+        $calendar = AcademicCalendar::forGrade($gradeLevel);
 
         Response::json([
             'success' => true,
             'subjects' => array_values($bySubject),
             'general_average' => $general,
-            'at_risk' => $atRisk,
             'trend' => $trendSeries,
-            'thresholds' => ['warn_below' => $warn, 'critical_below' => $critical],
+            'calendar' => $calendar,
             'official_card_available' => $cardAvailable,
+            'official_card_status' => $cardAvailable ? 'released' : (!empty($progress['generated']) ? 'generated' : 'waiting_subjects'),
         ]);
     }
 
@@ -254,14 +236,23 @@ final class StudentController
             return;
         }
 
+        $status = $card !== null
+            ? 'released'
+            : (!empty($progress['generated']) ? 'generated' : 'waiting_subjects');
+        $message = 'Official grading card.';
+        if ($card === null && !empty($progress['generated'])) {
+            $message = 'Your adviser has prepared the card. It will appear after release at PTC.';
+        } elseif ($card === null) {
+            $message = 'The official grading card is released by your class adviser after every subject teacher submits finals.';
+        }
+
         Response::json([
             'success' => true,
             'available' => $card !== null,
             'card' => $card,
             'progress' => $progress,
-            'message' => $card !== null
-                ? 'Official grading card.'
-                : 'The official grading card is issued only after every subject teacher has submitted final grades.',
+            'status' => $status,
+            'message' => $message,
         ]);
     }
 

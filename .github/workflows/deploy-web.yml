@@ -30,6 +30,19 @@ jobs:
           php-version: "8.3"
           coverage: none
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Build teacher web app
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run build:web
+
       - name: Export static site
         env:
           AMGS_WEB_BASE: /holyface

@@ -30,7 +30,9 @@ type Ctx = {
   colors: Palette;
   notifications: boolean;
   biometricEnabled: boolean;
+  biometricReady: boolean;
   login: (id: string, password: string) => Promise<void>;
+  loginWithBiometric: () => Promise<boolean>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
   setMustChange: (v: boolean) => void;
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [darkMode, setDark] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [biometricEnabled, setBio] = useState(false);
+  const [biometricReady, setBioReady] = useState(false);
 
   const colors = darkMode ? dark : light;
 
@@ -80,18 +83,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const [t, bio, langPref, darkPref, notif] = await Promise.all([
+      const [t, bio, langPref, darkPref, notif, bioReady] = await Promise.all([
         SecureStore.getItemAsync('amgs_token'),
         AsyncStorage.getItem('bio'),
         AsyncStorage.getItem('lang'),
         AsyncStorage.getItem('dark'),
         AsyncStorage.getItem('notif'),
+        AsyncStorage.getItem('bio_ready'),
       ]);
       if (langPref === 'fil' || langPref === 'en') setLangState(langPref);
       if (darkPref === '1') setDark(true);
       if (darkPref == null && Appearance.getColorScheme() === 'dark') setDark(true);
       if (notif === '0') setNotifications(false);
       setBio(bio === '1');
+      setBioReady(bioReady === '1');
       if (t) {
         const timedOut = await checkTimeout();
         if (!timedOut) {
@@ -103,7 +108,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               must_change_password: boolean;
               consent_complete: boolean;
             }>('/auth/me', { token: t });
-            if (me.user.role !== 'student') {
+            if (!me?.user?.role) {
+              await SecureStore.deleteItemAsync('amgs_token');
+            } else if (me.user.role !== 'student') {
               await SecureStore.deleteItemAsync('amgs_token');
             } else {
               setUser(me.user);
@@ -135,8 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       body: JSON.stringify({ username: id, password }),
     });
+    if (!data?.user?.role) {
+      throw { message: 'Cannot reach Holy Face AMGS. Check your internet and try again.', status: 0 };
+    }
     if (data.user.role !== 'student') {
-      throw { message: 'This app is for students only. Teachers use the desktop app.', status: 403 };
+      throw { message: 'This app is for students only. Teachers use the web workspace. The Registrar uses the desktop app.', status: 403 };
     }
     await SecureStore.setItemAsync('amgs_token', data.access_token);
     await persistLastActive();
@@ -145,6 +155,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setMustChange(data.must_change_password);
     setConsentComplete(data.consent_complete);
     setLocked(false);
+    if (biometricEnabled) {
+      try {
+        await SecureStore.setItemAsync('amgs_bio_login', JSON.stringify({ username: id, password }));
+        await AsyncStorage.setItem('bio_ready', '1');
+        setBioReady(true);
+      } catch {
+        // Account login already succeeded. Biometric login can be saved on the next password sign-in.
+      }
+    }
   };
 
   const refreshMe = async () => {
@@ -174,9 +193,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const has = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
       if (!has || !enrolled) throw new Error('Biometrics not available on this device.');
+      const gate = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Confirm biometric login',
+        cancelLabel: 'Cancel',
+      });
+      if (!gate.success) throw new Error('Biometric confirmation was cancelled.');
+    } else {
+      await SecureStore.deleteItemAsync('amgs_bio_login').catch(() => undefined);
+      await AsyncStorage.setItem('bio_ready', '0');
+      setBioReady(false);
     }
     setBio(on);
     await AsyncStorage.setItem('bio', on ? '1' : '0');
+  };
+
+  const loginWithBiometric = async () => {
+    const has = await LocalAuthentication.hasHardwareAsync();
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+    if (!has || !enrolled) throw new Error('Biometrics not available on this device.');
+    const gate = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Log in to Holy Face Student',
+      cancelLabel: 'Cancel',
+    });
+    if (!gate.success) return false;
+    const raw = await SecureStore.getItemAsync('amgs_bio_login');
+    if (!raw) throw new Error('Log in with your password once while biometric unlock is on.');
+    let saved: { username?: string; password?: string };
+    try {
+      saved = JSON.parse(raw) as { username?: string; password?: string };
+    } catch {
+      throw new Error('Log in with your password once while biometric unlock is on.');
+    }
+    if (!saved.username || !saved.password) {
+      throw new Error('Log in with your password once while biometric unlock is on.');
+    }
+    try {
+      await login(saved.username, saved.password);
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 401 || status === 423) {
+        await SecureStore.deleteItemAsync('amgs_bio_login').catch(() => undefined);
+        await AsyncStorage.setItem('bio_ready', '0');
+        setBioReady(false);
+      }
+      throw err;
+    }
+    return true;
   };
 
   const unlock = async () => {
@@ -202,7 +264,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       colors,
       notifications,
       biometricEnabled,
+      biometricReady,
       login,
+      loginWithBiometric,
       logout,
       refreshMe,
       setMustChange,
@@ -216,7 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       enableBiometric,
       unlock,
     }),
-    [ready, token, user, mustChange, consentComplete, locked, lang, darkMode, colors, notifications, biometricEnabled, logout]
+    [ready, token, user, mustChange, consentComplete, locked, lang, darkMode, colors, notifications, biometricEnabled, biometricReady, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

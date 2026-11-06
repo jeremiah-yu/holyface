@@ -1,11 +1,14 @@
 {
-  "name": "holyface-teacher-desktop",
+  "name": "holyface-registrar-desktop",
   "version": "1.0.0",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:web": "vite",
     "build": "vite build",
+    "build:web": "vite build --outDir ../web/public/teacher-app --emptyOutDir",
+    "dist": "vite build && electron-builder --win zip --win nsis",
     "start": "electron ."
   },
   "dependencies": {
@@ -18,8 +21,34 @@
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^9.0.0",
     "electron": "^31.0.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.5.0",
     "vite": "^5.4.0",
     "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "school.holyface.registrar",
+    "productName": "Holy Face AMGS Registrar",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "artifactName": "holyface-registrar-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Holy Face AMGS Registrar"
+    }
   }
 }

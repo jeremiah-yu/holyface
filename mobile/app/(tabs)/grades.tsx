@@ -9,7 +9,8 @@ import { cacheSet } from '../../src/storage/cache';
 type Academics = {
   general_average: number | null;
   official_card_available?: boolean;
-  at_risk: { badge: string; level: string }[];
+  official_card_status?: string;
+  calendar?: { periods: { id: number; code: string; label: string }[] };
   trend: { quarter: number; average: number }[];
   subjects: {
     subject: string;
@@ -38,7 +39,7 @@ export default function GradesScreen() {
   const maxH = 100;
   return (
     <ScrollView contentContainerStyle={{ padding: 16, backgroundColor: colors.bg, flexGrow: 1 }}>
-      <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700' }}>{t(lang, 'academics')}</Text>
+      <Text style={{ color: colors.ink, fontSize: 20, fontWeight: '700' }}>{t(lang, 'academics')}</Text>
       <Text style={{ color: colors.muted, marginTop: 4 }}>
         {t(lang, 'generalAvg')}: {data?.general_average ?? '—'}
       </Text>
@@ -53,25 +54,19 @@ export default function GradesScreen() {
           padding: 14,
         }}
       >
-          <Text style={{ color: '#c9a227', fontWeight: '800', fontSize: 16 }}>
+          <Text style={{ color: data?.official_card_available ? '#f6e27a' : colors.ink, fontWeight: '800', fontSize: 16 }}>
             {t(lang, 'officialCard')}
             {data?.official_card_available ? ' ✓' : ''}
           </Text>
           <Text style={{ color: data?.official_card_available ? '#fff' : colors.muted, marginTop: 4 }}>
-            {data?.official_card_available ? t(lang, 'officialCardReady') : t(lang, 'officialCardPending')}
+            {data?.official_card_available
+              ? t(lang, 'officialCardReady')
+              : data?.official_card_status === 'generated'
+                ? t(lang, 'officialCardWaitingRelease')
+                : t(lang, 'officialCardPending')}
           </Text>
       </Pressable>
-      {data?.at_risk?.length ? (
-        <View style={{ marginTop: 12 }}>
-          <Text style={{ color: colors.danger, fontWeight: '700' }}>{t(lang, 'atRisk')}</Text>
-          {data.at_risk.map((a) => (
-            <Text key={a.badge} style={{ color: colors.danger, marginTop: 4 }}>
-              {a.badge}
-            </Text>
-          ))}
-        </View>
-      ) : null}
-      <Text style={{ color: colors.text, fontWeight: '700', marginTop: 16 }}>Trend</Text>
+      <Text style={{ color: colors.ink, fontWeight: '700', marginTop: 16 }}>Trend</Text>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: 8, marginTop: 8 }}>
         {(data?.trend ?? []).map((p) => (
           <View key={p.quarter} style={{ flex: 1, alignItems: 'center' }}>
@@ -83,25 +78,27 @@ export default function GradesScreen() {
                 borderRadius: 4,
               }}
             />
-            <Text style={{ color: colors.muted, fontSize: 12 }}>Q{p.quarter}</Text>
+            <Text style={{ color: colors.muted, fontSize: 12 }}>
+              {data?.calendar?.periods.find((x) => x.id === p.quarter)?.code ?? `P${p.quarter}`}
+            </Text>
           </View>
         ))}
       </View>
       {(data?.subjects ?? []).map((s) => (
         <View key={s.subject} style={{ backgroundColor: colors.card, padding: 12, borderRadius: 10, marginTop: 10 }}>
-          <Text style={{ color: colors.text, fontWeight: '700' }}>{s.subject}</Text>
+          <Text style={{ color: colors.ink, fontWeight: '700' }}>{s.subject}</Text>
           <Text style={{ color: colors.muted }}>Final: {s.final_rating ?? '—'}</Text>
           {s.quarters.map((q) => (
-            <Text key={q.quarter} style={{ color: colors.text }}>
-              Q{q.quarter}: {q.grade ?? '—'}
+            <Text key={q.quarter} style={{ color: colors.ink }}>
+              {data?.calendar?.periods.find((x) => x.id === q.quarter)?.label ?? `P${q.quarter}`}: {q.grade ?? '—'}
             </Text>
           ))}
         </View>
       ))}
-      <Link href="/schedule" style={{ marginTop: 16, color: '#0b1f3a', fontWeight: '700' }}>
+      <Link href="/schedule" style={{ marginTop: 16, color: colors.link, fontWeight: '700' }}>
         {t(lang, 'schedule')} →
       </Link>
-      <Link href="/announcements" style={{ marginTop: 8, color: '#0b1f3a', fontWeight: '700' }}>
+      <Link href="/announcements" style={{ marginTop: 8, color: colors.link, fontWeight: '700' }}>
         {t(lang, 'announcements')} →
       </Link>
     </ScrollView>

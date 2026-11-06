@@ -19,5 +19,13 @@
       <h2>AI-assisted study tools</h2>
       <p>Study plans, flashcards, and sample quizzes are generated from class materials on school servers. We do not send a student’s name, student number, photo, or contact details to any external AI service. Read the <a href="<?= e(url('ai-policy.php')) ?>">AI Use Policy</a>.</p>
     </article>
+    <article class="card stack-gap">
+      <h2>Professor web gradebook</h2>
+      <p>Professors sign in on this website to encode Written Work, Performance Tasks, and Quarterly Assessment in a spreadsheet-style grid. Computation follows DepEd Order No. 8, s. 2015 (SUM + transmutation).</p>
+    </article>
+    <article class="card stack-gap">
+      <h2>Registrar desktop console</h2>
+      <p>The Windows app is for keeping school files, creating accounts, locking grading periods, and reviewing audit logs — not day-to-day grade encoding.</p>
+    </article>
   </div>
 </section>

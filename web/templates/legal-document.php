@@ -1,6 +1,6 @@
 <?php
 /** @var string $docCode */
-$catalog = require dirname(__DIR__, 2) . '/shared/legal/policies.php';
+$catalog = legal_catalog();
 $doc = $catalog['documents'][$docCode] ?? null;
 if (!$doc) {
     echo '<p>Document not found.</p>';

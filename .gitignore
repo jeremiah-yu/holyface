@@ -1,5 +1,6 @@
 /api/vendor/
 /api/.env
+/api/storage/registrar/
 /desktop/node_modules/
 /desktop/dist/
 /desktop/out/
@@ -12,3 +13,9 @@
 *.log
 Thumbs.db
 .DS_Store
+/deploy/
+/holyface-student.apk
+/web/public/downloads/*.apk
+/web/public/downloads/*.zip
+/web/public/downloads/*.exe
+/web/public/downloads/*.part*

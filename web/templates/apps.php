@@ -6,13 +6,13 @@ $desktopUrl = download_url('desktop');
   <div class="container">
     <p class="eyebrow">Downloads</p>
     <h1>Get the apps</h1>
-    <p class="lead">Scan the QR code, or use the download button. Mobile is for students. Desktop is for teachers.</p>
+    <p class="lead">Students use mobile. Professors encode grades in the browser — on a phone, open Professor login, then choose Add to Home Screen or Install app. The Registrar desktop app keeps files and maintains the system.</p>
   </div>
 </section>
 <section class="section">
-  <div class="container split">
+  <div class="container role-grid">
     <article class="card download-card">
-      <h2>Holy Face Student (mobile)</h2>
+      <h2>Student (mobile)</h2>
       <p>Grades, official card, and AI study tools on Android.</p>
       <div class="qr-block">
         <img
@@ -21,25 +21,25 @@ $desktopUrl = download_url('desktop');
           width="240"
           height="240"
         >
-        <p class="qr-caption">Scan to download the student app</p>
+        <p class="qr-caption">Scan to download the student APK</p>
       </div>
       <a class="btn btn-gold" href="<?= e($mobileUrl) ?>">Download Android APK</a>
-      <p class="muted small">Scan with your phone camera, or tap the button. Mag-log in with the student account issued by the Registrar.</p>
+      <p class="muted small">Mag-log in with the student account issued by the Registrar.</p>
     </article>
     <article class="card download-card">
-      <h2>Holy Face AMGS Teacher (desktop)</h2>
-      <p>Grade encoding, automatic computation, and class lists for Windows.</p>
+      <h2>Registrar (desktop)</h2>
+      <p>File vault, accounts, period locks, and system maintenance for Windows.</p>
       <div class="qr-block">
         <img
           src="<?= e(qr_image_url($desktopUrl, 240)) ?>"
-          alt="QR code to download the Holy Face teacher desktop app"
+          alt="QR code to download the Holy Face Registrar desktop app"
           width="240"
           height="240"
         >
-        <p class="qr-caption">Scan to download the teacher app</p>
+        <p class="qr-caption">Scan to download the Windows installer</p>
       </div>
       <a class="btn btn-navy" href="<?= e($desktopUrl) ?>">Download Windows installer</a>
-      <p class="muted small">For faculty PCs. Install only from this school site — never from unofficial links.</p>
+      <p class="muted small">For the Registrar office PC. Install only from this school site.</p>
     </article>
   </div>
 </section>

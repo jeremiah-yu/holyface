@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace HolyFace\Api;
 
+use HolyFace\Api\Controllers\AdminController;
+use HolyFace\Api\Controllers\AdviserController;
 use HolyFace\Api\Controllers\AiController;
 use HolyFace\Api\Controllers\AuthController;
 use HolyFace\Api\Controllers\GradeController;
@@ -22,6 +24,7 @@ use HolyFace\Api\Services\ConsentService;
 use HolyFace\Api\Services\CsrfService;
 use HolyFace\Api\Services\GradeComputationService;
 use HolyFace\Api\Services\LoginRateLimiter;
+use HolyFace\Api\Services\ReportCardService;
 
 final class Router
 {
@@ -35,8 +38,11 @@ final class Router
         $legal = new LegalController($consent, $audit);
         $students = new StudentController($jwt, $consent);
         $teachers = new TeacherController();
-        $grades = new GradeController(new GradeComputationService($audit), $audit);
+        $cards = new ReportCardService();
+        $grades = new GradeController(new GradeComputationService($audit), $audit, $cards);
+        $adviser = new AdviserController($cards, $audit);
         $settings = new SettingsController($audit);
+        $admin = new AdminController($audit);
         $public = new PublicController(new CsrfService());
         $ai = new AiController(new AiStudyService(new ContentFilter()), $students);
 
@@ -161,6 +167,30 @@ final class Router
             $teachers->filters($request, $ctx);
             return;
         }
+        if ($path === '/teachers/advisory' && $method === 'GET') {
+            $adviser->myAdvisory($request, $ctx);
+            return;
+        }
+        if ($path === '/adviser/desk' && $method === 'GET') {
+            $adviser->desk($request, $ctx);
+            return;
+        }
+        if ($path === '/adviser/sog' && $method === 'GET') {
+            $adviser->sog($request, $ctx);
+            return;
+        }
+        if ($path === '/adviser/cards' && $method === 'GET') {
+            $adviser->cards($request, $ctx);
+            return;
+        }
+        if ($path === '/adviser/generate-cards' && $method === 'POST') {
+            $adviser->generate($request, $ctx);
+            return;
+        }
+        if ($path === '/adviser/release-cards' && $method === 'POST') {
+            $adviser->release($request, $ctx);
+            return;
+        }
         if ($path === '/grades/components' && $method === 'GET') {
             $grades->listComponents($request, $ctx);
             return;
@@ -193,10 +223,6 @@ final class Router
             $grades->dashboard($request, $ctx);
             return;
         }
-        if ($path === '/grades/early-warning' && $method === 'GET') {
-            $grades->earlyWarning($request, $ctx);
-            return;
-        }
         if ($path === '/grades/missing' && $method === 'GET') {
             $grades->missingGrades($request, $ctx);
             return;
@@ -219,6 +245,50 @@ final class Router
         }
         if ($path === '/admin/transmutation' && $method === 'PUT') {
             $settings->saveTransmutation($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/overview' && $method === 'GET') {
+            $admin->overview($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/users' && $method === 'GET') {
+            $admin->listUsers($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/users' && $method === 'POST') {
+            $admin->createUser($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/users' && $method === 'PUT') {
+            $admin->updateUser($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/files' && $method === 'GET') {
+            $admin->listFiles($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/files' && $method === 'POST') {
+            $admin->uploadFile($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/files' && $method === 'DELETE') {
+            $admin->deleteFile($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/files/download' && $method === 'GET') {
+            $admin->downloadFile($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/audit' && $method === 'GET') {
+            $admin->audit($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/grade-audit' && $method === 'GET') {
+            $admin->gradeAudit($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/backup' && $method === 'GET') {
+            $admin->backup($request, $ctx);
             return;
         }
         if ($path === '/ai/study' && $method === 'POST') {

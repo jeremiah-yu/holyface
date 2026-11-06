@@ -1,0 +1,15 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE": "https://holyface.infinityfreeapp.com/api/public"
+      }
+    }
+  }
+}

@@ -15,10 +15,11 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--navy); }
+html { font-size: 16px; }
+body { margin: 0; background: var(--bg); color: var(--navy); font-size: 1rem; }
 button, input, select { font: inherit; }
 
-.app-shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
+.app-shell { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; min-height: 100vh; min-height: 100dvh; }
 .sidebar {
   background: var(--navy);
   color: var(--white);
@@ -28,7 +29,7 @@ button, input, select { font: inherit; }
   gap: 0.25rem;
 }
 .brand-block { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem; }
-.brand-block h1 { font-size: 1rem; margin: 0; color: var(--gold); }
+.brand-block h1 { font-size: 1.15rem; margin: 0; color: var(--gold); }
 .logo-sm { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 50%; padding: 3px; }
 .user-name { margin: 0.15rem 0 0; font-size: 0.88rem; opacity: 0.92; }
 .role { color: var(--gold) !important; text-transform: uppercase; font-size: 0.68rem !important; letter-spacing: 0.05em; margin: 0; }
@@ -39,7 +40,8 @@ button, input, select { font: inherit; }
   text-align: left;
   border: 0;
   border-radius: 6px;
-  padding: 0.48rem 0.65rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
   cursor: pointer;
 }
 .nav.on, .nav:hover { background: var(--navy-2); color: var(--gold); }
@@ -53,7 +55,7 @@ button, input, select { font: inherit; }
   box-shadow: 0 2px 10px rgba(11,31,58,.06);
   margin-bottom: 0.85rem;
 }
-.card h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+.card h2 { margin: 0 0 0.75rem; font-size: 1.35rem; }
 
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid #e3e8ee; vertical-align: middle; }
@@ -63,8 +65,8 @@ button, .btn {
   background: var(--navy);
   color: var(--gold);
   border: none;
-  padding: 0.42rem 0.8rem;
-  border-radius: 6px;
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
   font-weight: 650;
   cursor: pointer;
 }
@@ -72,34 +74,46 @@ button.ghost { background: #e8edf3; color: var(--navy); }
 button.link { background: none; color: var(--navy); padding: 0; font-weight: 700; text-decoration: underline; }
 button:disabled { opacity: 0.55; cursor: not-allowed; }
 
-input, select { padding: 0.38rem 0.5rem; border: 1px solid #cfd6df; border-radius: 6px; background: #fff; }
-label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; font-weight: 600; }
+input, select { padding: 0.55rem 0.7rem; border: 1px solid #cfd6df; border-radius: 8px; background: #fff; font-size: 1rem; }
+label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.95rem; font-weight: 600; }
 
 .login-wrap {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   background: var(--navy);
+  padding: clamp(1rem, 4vw, 3rem);
 }
-.login { max-width: 380px; width: 92%; text-align: center; }
-.login form { text-align: left; display: grid; gap: 0.65rem; }
+.login {
+  width: min(560px, 100%);
+  padding: clamp(1.4rem, 3vw, 2.25rem);
+  text-align: center;
+}
+.login h2 { font-size: clamp(1.6rem, 3vw, 2rem); }
+.login p { font-size: 1.05rem; }
+.login form { text-align: left; display: grid; gap: 0.9rem; }
+.login input { width: 100%; min-height: 48px; font-size: 1.05rem; }
+.login button[type="submit"] { width: 100%; min-height: 48px; font-size: 1.05rem; margin-top: 0.25rem; }
 .login .password-field {
   display: flex;
   flex-direction: row;
   align-items: center;
   border: 1px solid #cfd6df;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   overflow: hidden;
+  min-height: 48px;
 }
 .login .password-field input {
   flex: 1;
   min-width: 0;
   width: auto;
+  min-height: 48px;
   border: 0 !important;
   box-shadow: none;
   background: transparent;
-  padding: 0.5rem 0.65rem;
+  padding: 0.65rem 0.85rem;
 }
 .login .eye-toggle {
   flex: 0 0 44px;
@@ -116,8 +130,11 @@ label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; fon
   cursor: pointer;
 }
 .login .eye-toggle:hover { color: var(--gold) !important; background: #f0f3f7 !important; }
-.login .logo { width: 80px; height: 80px; object-fit: contain; }
-.hint { color: var(--muted); font-size: 0.82rem; }
+.login .logo { width: clamp(88px, 16vw, 112px); height: clamp(88px, 16vw, 112px); object-fit: contain; }
+.user-form { align-items: end; }
+.user-form button { height: 38px; }
+.hint { color: var(--muted); font-size: 0.9rem; }
+.login .hint { font-size: 0.95rem; }
 .error { color: var(--danger); }
 .ok { color: var(--ok); }
 .warn { color: var(--warn); font-weight: 600; }
@@ -336,6 +353,68 @@ label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; fon
   margin: 0.8rem 0;
 }
 .login form label input[type="checkbox"] { width: auto; margin-right: 8px; }
+
+.menu-btn { display: none; }
+button.nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(8, 16, 32, 0.45);
+  color: transparent;
+}
+
+@media (max-width: 900px) {
+  .menu-btn {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0 0.65rem;
+    min-height: 44px;
+  }
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 88vw);
+    z-index: 40;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    overflow: auto;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: max(0.75rem, env(safe-area-inset-top)) 0.7rem max(1.2rem, env(safe-area-inset-bottom));
+  }
+  .topbar { align-items: stretch; }
+  .topbar label { flex: 1 1 100%; }
+  .topbar select,
+  .topbar input,
+  .login input { width: 100%; font-size: 16px; }
+  .login-wrap {
+    padding: max(1rem, env(safe-area-inset-top)) 0.85rem max(1rem, env(safe-area-inset-bottom));
+    align-items: center;
+  }
+  .login { width: min(560px, 100%); }
+  .sheet-scroll { max-height: 70vh; }
+  .sheet-toolbar { font-size: 0.85rem; }
+  .formula-name { min-width: 96px; max-width: 140px; }
+  .card > table,
+  .card form > table { display: block; overflow-x: auto; }
+  .user-form { align-items: stretch; }
+  .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 901px) {
+  button.nav-backdrop { display: none !important; }
+}
 
 @media print {
   .sidebar, .topbar, .sheet-toolbar button, .sheet-tabs { display: none !important; }

@@ -43,9 +43,38 @@ export function toCsv(rows: string[][]): string {
 }
 
 export function parseTsv(text: string): string[][] {
-  return text
-    .replace(/\r/g, '')
+  return parseSheet(text);
+}
+
+export function parseSheet(text: string): string[][] {
+  const normalized = text.replace(/\r/g, '');
+  const useCsv = !normalized.includes('\t') && normalized.includes(',');
+  return normalized
     .split('\n')
     .filter((line) => line.length > 0)
-    .map((line) => line.split('\t'));
+    .map((line) => (useCsv ? splitCsv(line) : line.split('\t')));
+}
+
+function splitCsv(line: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (quoted && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (ch === ',' && !quoted) {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
 }

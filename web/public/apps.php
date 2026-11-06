@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
-require dirname(__DIR__) . '/includes/bootstrap.php';
+require __DIR__ . '/_init.php';
 render('apps', [
     'pageTitle' => 'Get the apps — Holy Face AMGS',
-    'pageDescription' => 'Download the Holy Face Student mobile app and the teacher desktop app. Scan the QR code or use the download button.',
+    'pageDescription' => 'Student mobile app, teacher web workspace, and Registrar desktop app for Holy Face AMGS.',
     'canonical' => abs_url('apps.php'),
     'nav' => 'apps',
 ]);

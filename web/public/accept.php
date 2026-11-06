@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require dirname(__DIR__) . '/includes/bootstrap.php';
+require __DIR__ . '/_init.php';
 
 if (empty($_SESSION['amgs_user']) || empty($_SESSION['amgs_token'])) {
     header('Location: ' . url('login.php'));
@@ -30,11 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($data['success']) && !empty($data['complete'])) {
             $_SESSION['amgs_consent'] = true;
             $role = $_SESSION['amgs_user']['role'] ?? '';
-            $target = match ($role) {
-                'student' => 'student-portal.php',
-                'teacher' => 'teacher-portal.php',
-                default => 'admin-portal.php',
-            };
+            if ($role === 'student') {
+                header('Location: ' . cfg()['portal_url']);
+                exit;
+            }
+            $target = $role === 'teacher' ? 'teacher-portal.php' : 'admin-portal.php';
             header('Location: ' . url($target));
             exit;
         }
@@ -47,7 +47,7 @@ $pageTitle = 'Accept Terms and Policies — Holy Face AMGS';
 $pageDescription = 'First-login acceptance of Terms of Use, Privacy Policy, and AI Use Policy.';
 $canonical = abs_url('accept.php');
 $nav = '';
-require dirname(__DIR__) . '/templates/header.php';
+require web_pkg_root() . '/templates/header.php';
 ?>
 <section class="section">
   <div class="container narrow">
@@ -115,4 +115,4 @@ require dirname(__DIR__) . '/templates/header.php';
   if (box.scrollHeight <= box.clientHeight + 8) unlock();
 })();
 </script>
-<?php require dirname(__DIR__) . '/templates/footer.php';
+<?php require web_pkg_root() . '/templates/footer.php';

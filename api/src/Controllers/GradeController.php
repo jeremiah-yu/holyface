@@ -6,6 +6,7 @@ namespace HolyFace\Api\Controllers;
 use HolyFace\Api\Database\Connection;
 use HolyFace\Api\Http\Request;
 use HolyFace\Api\Http\Response;
+use HolyFace\Api\Services\AcademicCalendar;
 use HolyFace\Api\Services\AuditService;
 use HolyFace\Api\Services\GradeComputationService;
 use HolyFace\Api\Services\ReportCardService;
@@ -42,8 +43,11 @@ final class GradeController
 
         $allowedTypes = ['written_work', 'performance_task', 'quarterly_assessment'];
         $allowedStatus = ['scored', 'absent', 'excused'];
-        if ($enrollmentId <= 0 || $csaId <= 0 || $quarter < 1 || $quarter > 4 || !in_array($type, $allowedTypes, true) || $label === '' || $max <= 0) {
+        if ($enrollmentId <= 0 || $csaId <= 0 || $quarter < 1 || !in_array($type, $allowedTypes, true) || $label === '' || $max <= 0) {
             Response::error('Invalid grade component payload.', 422);
+            return;
+        }
+        if (!$this->assertPeriod($csaId, $quarter)) {
             return;
         }
         if (!in_array($status, $allowedStatus, true)) {
@@ -142,7 +146,7 @@ final class GradeController
 
         $csaId = (int) ($request->query['class_subject_assignment_id'] ?? 0);
         $quarter = (int) ($request->query['quarter'] ?? 1);
-        if ($csaId <= 0 || $quarter < 1 || $quarter > 4) {
+        if ($csaId <= 0 || $quarter < 1) {
             Response::error('class_subject_assignment_id and quarter required.', 422);
             return;
         }
@@ -172,6 +176,12 @@ final class GradeController
             Response::error('Class assignment not found.', 404);
             return;
         }
+        $gradeLevel = (int) $class['grade_level'];
+        if (!AcademicCalendar::isValidPeriod($gradeLevel, $quarter)) {
+            Response::error('That grading period is not used for this grade level.', 422);
+            return;
+        }
+        $calendar = AcademicCalendar::forGrade($gradeLevel);
 
         $itemsStmt = $pdo->prepare(
             'SELECT id, component_type, item_label, max_score, sort_order
@@ -230,6 +240,8 @@ final class GradeController
             'success' => true,
             'class' => $class,
             'quarter' => $quarter,
+            'calendar' => $calendar,
+            'period' => AcademicCalendar::period($gradeLevel, $quarter),
             'locked' => $this->isLocked($pdo, $csaId, $quarter),
             'weights' => $this->grades->weightsForCsa($csaId),
             'passing_mark' => $this->grades->passingMark(),
@@ -253,8 +265,11 @@ final class GradeController
         $max = (float) ($body['max_score'] ?? 0);
         $allowedTypes = ['written_work', 'performance_task', 'quarterly_assessment'];
 
-        if ($csaId <= 0 || $quarter < 1 || $quarter > 4 || !in_array($type, $allowedTypes, true) || $label === '' || $max <= 0) {
+        if ($csaId <= 0 || $quarter < 1 || !in_array($type, $allowedTypes, true) || $label === '' || $max <= 0) {
             Response::error('Invalid grade item payload.', 422);
+            return;
+        }
+        if (!$this->assertPeriod($csaId, $quarter)) {
             return;
         }
         if ($auth['role'] === 'teacher' && !$this->teacherOwnsCsa((int) $auth['user']['id'], $csaId)) {
@@ -390,8 +405,11 @@ final class GradeController
         $csaId = (int) ($body['class_subject_assignment_id'] ?? 0);
         $quarter = (int) ($body['quarter'] ?? 0);
         $cells = $body['cells'] ?? [];
-        if ($csaId <= 0 || $quarter < 1 || $quarter > 4 || !is_array($cells)) {
+        if ($csaId <= 0 || $quarter < 1 || !is_array($cells)) {
             Response::error('class_subject_assignment_id, quarter, and cells required.', 422);
+            return;
+        }
+        if (!$this->assertPeriod($csaId, $quarter)) {
             return;
         }
         if ($auth['role'] === 'teacher' && !$this->teacherOwnsCsa((int) $auth['user']['id'], $csaId)) {
@@ -559,18 +577,19 @@ final class GradeController
              WHERE class_subject_assignment_id = ?'
         )->execute([(int) $auth['user']['id'], $csaId]);
 
-        $cards = ['issued' => 0, 'waiting' => 0];
+        $ready = ['ready' => 0, 'waiting' => 0];
         try {
-            $cards = $this->reportCards->issueReadyCardsForClass($csaId);
+            $ready = $this->reportCards->readyCountForClass($csaId);
         } catch (\Throwable) {
             // table may not exist until migration 006 is applied
         }
 
-        $this->audit->log((int) $auth['user']['id'], 'grades.submit_final', 'final_grades', (string) $csaId, $cards, $request->ip);
+        $this->audit->log((int) $auth['user']['id'], 'grades.submit_final', 'final_grades', (string) $csaId, $ready, $request->ip);
         Response::json([
             'success' => true,
             'submitted' => true,
-            'report_cards' => $cards,
+            'advisory' => $ready,
+            'message' => 'Finals submitted. The class adviser generates and releases official cards.',
         ]);
     }
 
@@ -645,81 +664,6 @@ final class GradeController
         ]);
     }
 
-    public function earlyWarning(Request $request, array $auth): void
-    {
-        if (!in_array($auth['role'], ['teacher', 'admin'], true)) {
-            Response::error('Forbidden.', 403);
-            return;
-        }
-
-        $pdo = Connection::get();
-        $threshold = (float) ($request->query['threshold'] ?? $this->setting($pdo, 'early_warning_threshold', '78'));
-        $drop = (float) ($request->query['drop_points'] ?? $this->setting($pdo, 'drop_points', '8'));
-        $csaId = isset($request->query['class_subject_assignment_id']) ? (int) $request->query['class_subject_assignment_id'] : 0;
-
-        $sql = 'SELECT e.id AS enrollment_id, s.lrn, u.full_name, s.photo_path, s.grade_level, s.section_code,
-                       st.code AS strand, sub.title AS subject_title, csa.id AS class_subject_assignment_id,
-                       fg.q1, fg.q2, fg.q3, fg.q4, fg.final_rating
-                FROM enrollments e
-                INNER JOIN students s ON s.id = e.student_id
-                INNER JOIN users u ON u.id = s.user_id
-                INNER JOIN strands st ON st.id = s.strand_id
-                INNER JOIN class_subject_assignments csa ON csa.class_section_id = e.class_section_id
-                INNER JOIN subjects sub ON sub.id = csa.subject_id
-                LEFT JOIN final_grades fg ON fg.enrollment_id = e.id AND fg.class_subject_assignment_id = csa.id
-                WHERE e.status = "enrolled"';
-        $params = [];
-        if ($csaId > 0) {
-            $sql .= ' AND csa.id = ?';
-            $params[] = $csaId;
-        } elseif ($auth['role'] === 'teacher') {
-            $sql .= ' AND csa.teacher_id = (SELECT id FROM teachers WHERE user_id = ? LIMIT 1)';
-            $params[] = (int) $auth['user']['id'];
-        }
-        $sql .= ' ORDER BY u.full_name';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-
-        $alerts = [];
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $reasons = [];
-            $latest = null;
-            foreach (['q4', 'q3', 'q2', 'q1'] as $q) {
-                if ($row[$q] !== null) {
-                    $latest = (float) $row[$q];
-                    break;
-                }
-            }
-            if ($latest !== null && $latest < $threshold) {
-                $reasons[] = 'Below threshold (' . $threshold . ')';
-            }
-            $seq = [];
-            foreach (['q1', 'q2', 'q3', 'q4'] as $q) {
-                if ($row[$q] !== null) {
-                    $seq[] = (float) $row[$q];
-                }
-            }
-            for ($i = 1, $n = count($seq); $i < $n; $i++) {
-                if ($seq[$i - 1] - $seq[$i] >= $drop) {
-                    $reasons[] = 'Sharp drop of ' . round($seq[$i - 1] - $seq[$i], 1) . ' points';
-                    break;
-                }
-            }
-            if ($reasons) {
-                $row['reasons'] = $reasons;
-                $row['latest_grade'] = $latest;
-                $alerts[] = $row;
-            }
-        }
-
-        Response::json([
-            'success' => true,
-            'threshold' => $threshold,
-            'drop_points' => $drop,
-            'alerts' => $alerts,
-        ]);
-    }
-
     public function missingGrades(Request $request, array $auth): void
     {
         if (!in_array($auth['role'], ['teacher', 'admin'], true)) {
@@ -753,6 +697,24 @@ final class GradeController
         );
         $stmt->execute([$quarter, $csaId]);
         Response::json(['success' => true, 'missing' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    }
+
+    private function assertPeriod(int $csaId, int $period): bool
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT cs.grade_level
+             FROM class_subject_assignments csa
+             INNER JOIN class_sections cs ON cs.id = csa.class_section_id
+             WHERE csa.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$csaId]);
+        $gradeLevel = (int) $stmt->fetchColumn();
+        if ($gradeLevel <= 0 || !AcademicCalendar::isValidPeriod($gradeLevel, $period)) {
+            Response::error('That grading period is not used for this grade level.', 422);
+            return false;
+        }
+        return true;
     }
 
     private function teacherOwnsCsa(int $userId, int $csaId): bool

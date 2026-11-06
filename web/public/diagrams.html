@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Holy Face AMGS — Flowcharts, ERD, and DFD</title>
+  <style>
+    :root {
+      --navy: #0b1f3a;
+      --gold: #c9a227;
+      --paper: #f4f4f4;
+      --ink: #111;
+      --muted: #4a5563;
+      --line: #d5dde6;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, "Segoe UI", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    header.hero { background: var(--navy); color: #fff; padding: 2rem 1.25rem 1.5rem; }
+    header.hero .wrap, main, nav.toc .wrap { max-width: 1080px; margin: 0 auto; }
+    .eyebrow { color: var(--gold); letter-spacing: .08em; text-transform: uppercase; font-size: .78rem; font-weight: 700; margin: 0 0 .4rem; }
+    header.hero h1 { margin: 0 0 .4rem; font-size: 1.75rem; }
+    header.hero p { margin: 0; color: #d6deea; max-width: 70ch; }
+    nav.toc { position: sticky; top: 0; z-index: 4; background: #fff; border-bottom: 1px solid var(--line); }
+    nav.toc ul { display: flex; flex-wrap: wrap; gap: .35rem .75rem; list-style: none; margin: 0; padding: .65rem 1.25rem; }
+    nav.toc a { color: var(--navy); text-decoration: none; font-size: .86rem; font-weight: 650; }
+    nav.toc a:hover { color: var(--gold); }
+    main { padding: 1.5rem 1.25rem 4rem; }
+    section { background: #fff; border: 1px solid var(--line); padding: 1.25rem 1.35rem 1.5rem; margin: 0 0 1.25rem; }
+    section h2 { margin: 0 0 .35rem; font-size: 1.22rem; color: var(--navy); }
+    section h3 { margin: 1.1rem 0 .45rem; font-size: 1.02rem; color: var(--navy); }
+    section p.note { margin: 0 0 1rem; color: var(--muted); font-size: .92rem; }
+    .diagram { overflow-x: auto; background: #fff; border: 1px solid #ccc; padding: .6rem .4rem; }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; overflow: visible; }
+    .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .65rem; margin: 0 0 1rem; }
+    .legend div { border: 1px solid #ccc; padding: .55rem .7rem; font-size: .86rem; }
+    .legend strong { display: block; }
+    ol.rules { margin: .5rem 0 0; padding-left: 1.2rem; color: var(--muted); }
+
+    .ipo-classic { background: #fff; border: 1px solid #ccc; padding: 1.4rem 1.1rem .85rem; color: var(--ink); }
+    .ipo-grid {
+      display: grid;
+      grid-template-columns: 1fr 36px 1fr 36px 1fr;
+      gap: .55rem .2rem;
+      align-items: stretch;
+    }
+    .ipo-grid > div:nth-child(odd) { display: flex; flex-direction: column; min-height: 0; }
+    .ipo-cap {
+      border: 2px solid #111;
+      border-radius: 999px;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: .06em;
+      padding: .42rem .6rem;
+      margin: 0 auto .7rem;
+      width: min(170px, 92%);
+      background: #fff;
+      font-size: .95rem;
+    }
+    .ipo-pill {
+      flex: 1;
+      border: 2.5px solid #111;
+      border-radius: 72px;
+      padding: 1.15rem 1.15rem 1.2rem;
+      min-height: 17rem;
+      background: #fff;
+    }
+    .ipo-pill h4 { margin: 0 0 .35rem; font-size: .92rem; }
+    .ipo-pill ul { margin: 0 0 .65rem; padding-left: 1.05rem; font-size: .82rem; }
+    .ipo-pill ul:last-child { margin-bottom: 0; }
+    .ipo-pill p.out-title { margin: 1.4rem .4rem; text-align: center; font-weight: 700; font-size: 1.02rem; line-height: 1.35; }
+    .ipo-arrow { display: flex; align-items: center; justify-content: center; }
+    .ipo-classic { overflow: visible; }
+    .ipo-feedback {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 36px 1fr 36px 1fr;
+      height: 72px;
+      margin-top: -2px;
+    }
+    .ipo-fb-in, .ipo-fb-out { position: relative; }
+    .ipo-fb-v {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 2px;
+      height: 42px;
+      background: #111;
+      transform: translateX(-50%);
+    }
+    .ipo-fb-in .ipo-fb-v::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -100%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 9px solid #111;
+    }
+    .ipo-fb-bar {
+      position: absolute;
+      left: calc((100% - 72px) / 6);
+      right: calc((100% - 72px) / 6);
+      top: 40px;
+      height: 2px;
+      background: #111;
+    }
+    .ipo-fb-label {
+      position: absolute;
+      left: 50%;
+      top: 26px;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 2px solid #111;
+      border-radius: 999px;
+      padding: .28rem 1.15rem;
+      font-weight: 700;
+      font-size: .92rem;
+      letter-spacing: .04em;
+      z-index: 2;
+      white-space: nowrap;
+    }
+    .ipo-fb-label::after {
+      content: "";
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      border-right: 9px solid #111;
+    }
+    .ipo-classic.compact .ipo-pill { min-height: 8.5rem; border-radius: 48px; padding: .85rem 1rem; }
+    .ipo-classic.compact .ipo-feedback { display: none; }
+
+    @media (max-width: 760px) {
+      .ipo-grid { grid-template-columns: 1fr; }
+      .ipo-arrow { transform: rotate(90deg); min-height: 1.4rem; }
+      .ipo-feedback { display: none; }
+      .ipo-pill { border-radius: 28px; min-height: 0; }
+    }
+    footer { text-align: center; padding: 1rem; color: var(--muted); font-size: .82rem; }
+    @media print {
+      nav.toc { display: none; }
+      header.hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      section { break-after: page; border: 0; }
+      .diagram, .ipo-classic { border: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">HOLY FACE OF JESUS LYCEUM OF SAN JOSE, INC.</p>
+      <h1>Academic Monitoring &amp; Grading System</h1>
+      <p>IPO, flowcharts, entity-relationship diagram, and data flow diagrams (Level 0–2) for the live AMGS: professor web workspace, student mobile app, registrar desktop, and shared PHP/MySQL API.</p>
+    </div>
+  </header>
+  <nav class="toc" aria-label="Diagrams">
+    <div class="wrap">
+      <ul>
+        <li><a href="#ipo">IPO</a></li>
+        <li><a href="#overall">Overall</a></li>
+        <li><a href="#web">Web</a></li>
+        <li><a href="#mobile">Mobile</a></li>
+        <li><a href="#desktop">Desktop</a></li>
+        <li><a href="#erd">ERD</a></li>
+        <li><a href="#dfd0">DFD 0</a></li>
+        <li><a href="#dfd1">DFD 1</a></li>
+        <li><a href="#dfd2">DFD 2</a></li>
+      </ul>
+    </div>
+  </nav>
+  <main>
+    <section>
+      <h2>Roles in this system</h2>
+      <p class="note">Database role codes stay <code>admin</code>, <code>teacher</code>, and <code>student</code>. Screens use Registrar, Professor, and Student. One REST API and MySQL database <code>holyface_amgs</code>.</p>
+      <div class="legend">
+        <div><strong>Web</strong> Public site + professor gradebook</div>
+        <div><strong>Mobile</strong> Student grades, ID, official card, study tools</div>
+        <div><strong>Desktop</strong> Registrar files, accounts, locks, audit</div>
+        <div><strong>API / MySQL</strong> PHP 8 REST, JWT, DepEd SUM</div>
+      </div>
+    </section>
+
+    <section id="ipo">
+      <h2>IPO — Input, Process, Output</h2>
+      <p class="note">School-paper IPO for Holy Face AMGS. Feedback is audit logs, period locks, and policy updates that go back into the next cycle.</p>
+      <div class="ipo-classic" aria-label="IPO whole AMGS">
+        <div class="ipo-grid">
+          <div>
+            <div class="ipo-cap">INPUT</div>
+            <article class="ipo-pill ipo-in">
+              <h4>School and academic data</h4>
+              <ul>
+                <li>Username and password</li>
+                <li>WW / PT / QA scores</li>
+                <li>Class notes (PDF, Word, photo, max 15 MB)</li>
+                <li>School files and new accounts</li>
+              </ul>
+              <h4>Software and hardware</h4>
+              <ul>
+                <li>Web: PHP 8, React gradebook</li>
+                <li>Mobile: Expo / React Native</li>
+                <li>Desktop: Electron</li>
+                <li>Database: MySQL / MariaDB</li>
+                <li>API: PHP REST, JWT</li>
+                <li>AI: Gemini Flash-Lite (no identity)</li>
+              </ul>
+            </article>
+          </div>
+          <div class="ipo-arrow" aria-hidden="true">
+            <svg width="28" height="18" viewBox="0 0 28 18"><path d="M1 9 H22" stroke="#111" stroke-width="2" fill="none"/><path d="M16 2 L26 9 L16 16 Z" fill="#111"/></svg>
+          </div>
+          <div>
+            <div class="ipo-cap">PROCESS</div>
+            <article class="ipo-pill">
+              <h4>System work</h4>
+              <ul>
+                <li><strong>Authenticate:</strong> login and check role</li>
+                <li><strong>Save:</strong> write records in MySQL</li>
+                <li><strong>Compute:</strong> DepEd Order No. 8 s. 2015 SUM + transmutation</li>
+                <li><strong>Lock:</strong> close grading periods</li>
+                <li><strong>Issue:</strong> official report card when all finals are submitted</li>
+                <li><strong>Study tools:</strong> extract notes, then plan / flashcards / quiz / chat with no name or student number</li>
+                <li><strong>Maintain:</strong> file vault, accounts, audit</li>
+              </ul>
+              <h4>Data gathering</h4>
+              <ul>
+                <li>Class lists and enrollments</li>
+                <li>Policy acceptance</li>
+                <li>Registrar files and settings</li>
+              </ul>
+            </article>
+          </div>
+          <div class="ipo-arrow" aria-hidden="true">
+            <svg width="28" height="18" viewBox="0 0 28 18"><path d="M1 9 H22" stroke="#111" stroke-width="2" fill="none"/><path d="M16 2 L26 9 L16 16 Z" fill="#111"/></svg>
+          </div>
+          <div>
+            <div class="ipo-cap">OUTPUT</div>
+            <article class="ipo-pill ipo-out">
+              <p class="out-title">Holy Face Academic Monitoring and Grading System</p>
+              <ul>
+                <li>Quarterly and final grades</li>
+                <li>Official report card snapshot</li>
+                <li>Digital ID and study tools</li>
+                <li>File vault and user directory</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+        <div class="ipo-feedback" aria-label="Feedback from output back to input">
+          <div class="ipo-fb-in"><span class="ipo-fb-v"></span></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div class="ipo-fb-out"><span class="ipo-fb-v"></span></div>
+          <span class="ipo-fb-bar"></span>
+          <span class="ipo-fb-label">FEEDBACK</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="overall">
+      <h2>1. Overall system flowchart</h2>
+      <p class="note">Each person opens the matching app, then logs in to the same API. Student = mobile, professor = web, registrar = desktop.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 900 640" role="img" aria-label="Overall AMGS flowchart">
+          <defs>
+            <marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <ellipse cx="450" cy="28" rx="48" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="32" text-anchor="middle" font-size="12" font-family="Arial">Start</text>
+          <line x1="450" y1="44" x2="450" y2="62" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="385" y="62" width="130" height="34" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="83" text-anchor="middle" font-size="12" font-family="Arial">Log in</text>
+          <line x1="450" y1="96" x2="450" y2="118" stroke="#111" marker-end="url(#a1)"/>
+          <polygon points="450,118 528,168 450,218 372,168" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="164" text-anchor="middle" font-size="12" font-family="Arial">Which role?</text>
+          <text x="450" y="178" text-anchor="middle" font-size="10" font-family="Arial">(API check)</text>
+
+          <path d="M372 168 H160 V232" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <text x="210" y="158" font-size="11" font-family="Arial">Student</text>
+          <path d="M450 218 V232" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <text x="462" y="230" font-size="11" font-family="Arial">Professor</text>
+          <path d="M528 168 H740 V232" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <text x="620" y="158" font-size="11" font-family="Arial">Registrar</text>
+
+          <rect x="80" y="236" width="160" height="44" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="160" y="255" text-anchor="middle" font-size="12" font-family="Arial">View own grades</text>
+          <text x="160" y="271" text-anchor="middle" font-size="12" font-family="Arial">and digital ID</text>
+          <line x1="160" y1="280" x2="160" y2="302" stroke="#111" marker-end="url(#a1)"/>
+          <polygon points="160,302 214,342 160,382 106,342" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="160" y="338" text-anchor="middle" font-size="11" font-family="Arial">Upload notes?</text>
+          <text x="160" y="352" text-anchor="middle" font-size="10" font-family="Arial">(max 15 MB)</text>
+          <path d="M214 342 H250 V418 H160 V430" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <text x="256" y="336" font-size="10" font-family="Arial">Yes</text>
+          <rect x="80" y="430" width="160" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="160" y="447" text-anchor="middle" font-size="11" font-family="Arial">Study tools, no</text>
+          <text x="160" y="462" text-anchor="middle" font-size="11" font-family="Arial">identity to AI</text>
+          <path d="M106 342 H70 V506 H160 V514" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <text x="48" y="336" font-size="10" font-family="Arial">No</text>
+          <line x1="160" y1="470" x2="160" y2="510" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="80" y="514" width="160" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="160" y="531" text-anchor="middle" font-size="11" font-family="Arial">Official card</text>
+          <text x="160" y="546" text-anchor="middle" font-size="11" font-family="Arial">if already issued</text>
+
+          <rect x="375" y="236" width="150" height="44" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="255" text-anchor="middle" font-size="12" font-family="Arial">Encode WW / PT / QA</text>
+          <text x="450" y="271" text-anchor="middle" font-size="12" font-family="Arial">on web gradebook</text>
+          <line x1="450" y1="280" x2="450" y2="302" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="375" y="302" width="150" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="319" text-anchor="middle" font-size="11" font-family="Arial">Compute DepEd SUM</text>
+          <text x="450" y="334" text-anchor="middle" font-size="11" font-family="Arial">+ transmutation</text>
+          <line x1="450" y1="342" x2="450" y2="364" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="375" y="364" width="150" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="388" text-anchor="middle" font-size="12" font-family="Arial">Submit finals</text>
+          <line x1="450" y1="404" x2="450" y2="426" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="355" y="426" width="190" height="44" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="445" text-anchor="middle" font-size="11" font-family="Arial">API issues official card</text>
+          <text x="450" y="461" text-anchor="middle" font-size="11" font-family="Arial">when all subjects are in</text>
+
+          <rect x="660" y="236" width="160" height="44" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="740" y="255" text-anchor="middle" font-size="12" font-family="Arial">Keep files and</text>
+          <text x="740" y="271" text-anchor="middle" font-size="12" font-family="Arial">accounts</text>
+          <line x1="740" y1="280" x2="740" y2="302" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="660" y="302" width="160" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="740" y="326" text-anchor="middle" font-size="12" font-family="Arial">Lock grading period</text>
+          <line x1="740" y1="342" x2="740" y2="364" stroke="#111" marker-end="url(#a1)"/>
+          <rect x="660" y="364" width="160" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="740" y="388" text-anchor="middle" font-size="12" font-family="Arial">Audit and backup</text>
+
+          <path d="M160 554 V616 H410" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <path d="M450 470 V600" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <path d="M740 404 V616 H490" fill="none" stroke="#111" marker-end="url(#a1)"/>
+          <ellipse cx="450" cy="616" rx="40" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="450" y="620" text-anchor="middle" font-size="12" font-family="Arial">End</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="web">
+      <h2>2. Web flowchart — professor workspace</h2>
+      <p class="note">Professor login opens the gradebook SPA. Portal Login leaves AMGS and opens the official school portal. The professor does not issue the card; the API does when every assigned subject has submitted finals.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 560 820" role="img" aria-label="Professor web flowchart">
+          <defs>
+            <marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <ellipse cx="280" cy="24" rx="46" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="28" text-anchor="middle" font-size="12" font-family="Arial">Start</text>
+          <line x1="280" y1="40" x2="280" y2="58" stroke="#111" marker-end="url(#a2)"/>
+          <rect x="190" y="58" width="180" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="80" text-anchor="middle" font-size="12" font-family="Arial">Log in as professor</text>
+          <line x1="280" y1="94" x2="280" y2="112" stroke="#111" marker-end="url(#a2)"/>
+          <rect x="175" y="112" width="210" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="134" text-anchor="middle" font-size="12" font-family="Arial">Open assigned class grid</text>
+          <line x1="280" y1="148" x2="280" y2="166" stroke="#111" marker-end="url(#a2)"/>
+          <rect x="175" y="166" width="210" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="188" text-anchor="middle" font-size="12" font-family="Arial">Encode WW / PT / QA</text>
+          <line x1="280" y1="202" x2="280" y2="224" stroke="#111" marker-end="url(#a2)"/>
+          <polygon points="280,224 350,268 280,312 210,268" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="272" text-anchor="middle" font-size="12" font-family="Arial">Period locked?</text>
+          <path d="M210 268 H115 V340" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <text x="92" y="262" font-size="11" font-family="Arial">Yes</text>
+          <rect x="40" y="340" width="150" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="115" y="362" text-anchor="middle" font-size="12" font-family="Arial">Read-only grid</text>
+          <path d="M350 268 H445 V340" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <text x="452" y="262" font-size="11" font-family="Arial">No</text>
+          <rect x="370" y="340" width="150" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="445" y="362" text-anchor="middle" font-size="12" font-family="Arial">Save scores</text>
+          <path d="M445 376 V392 H280 V404" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <rect x="175" y="404" width="210" height="44" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="422" text-anchor="middle" font-size="12" font-family="Arial">API computes SUM</text>
+          <text x="280" y="438" text-anchor="middle" font-size="12" font-family="Arial">+ transmutation</text>
+          <line x1="280" y1="448" x2="280" y2="466" stroke="#111" marker-end="url(#a2)"/>
+          <rect x="175" y="466" width="210" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="488" text-anchor="middle" font-size="12" font-family="Arial">Show quarterly grade</text>
+          <line x1="280" y1="502" x2="280" y2="520" stroke="#111" marker-end="url(#a2)"/>
+          <rect x="175" y="520" width="210" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="542" text-anchor="middle" font-size="12" font-family="Arial">Submit finals</text>
+          <line x1="280" y1="556" x2="280" y2="578" stroke="#111" marker-end="url(#a2)"/>
+          <polygon points="280,578 368,624 280,670 192,624" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="620" text-anchor="middle" font-size="11" font-family="Arial">All subjects</text>
+          <text x="280" y="634" text-anchor="middle" font-size="11" font-family="Arial">submitted?</text>
+          <path d="M192 624 H105 V710" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <text x="78" y="618" font-size="11" font-family="Arial">No</text>
+          <rect x="20" y="710" width="170" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="105" y="732" text-anchor="middle" font-size="11" font-family="Arial">Wait for others</text>
+          <path d="M368 624 H455 V710" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <text x="468" y="618" font-size="11" font-family="Arial">Yes</text>
+          <rect x="370" y="710" width="170" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="455" y="732" text-anchor="middle" font-size="11" font-family="Arial">Issue official card</text>
+          <path d="M105 746 V790 H240" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <path d="M455 746 V790 H320" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <path d="M40 376 H12 V790 H240" fill="none" stroke="#111" marker-end="url(#a2)"/>
+          <ellipse cx="280" cy="790" rx="40" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="280" y="794" text-anchor="middle" font-size="12" font-family="Arial">End</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="mobile">
+      <h2>3. Mobile flowchart — student app</h2>
+      <p class="note">Expo student app. Uploaded notes are redacted; name, student number, photo, and contact are never sent to Gemini. File limit is 15 MB. Text that is not class notes is rejected.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 540 720" role="img" aria-label="Student mobile flowchart">
+          <defs>
+            <marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <ellipse cx="240" cy="24" rx="46" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="28" text-anchor="middle" font-size="12" font-family="Arial">Start</text>
+          <line x1="240" y1="40" x2="240" y2="58" stroke="#111" marker-end="url(#a3)"/>
+          <rect x="145" y="58" width="190" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="80" text-anchor="middle" font-size="12" font-family="Arial">Log in as student</text>
+          <line x1="240" y1="94" x2="240" y2="112" stroke="#111" marker-end="url(#a3)"/>
+          <rect x="130" y="112" width="220" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="134" text-anchor="middle" font-size="12" font-family="Arial">View own grades and ID</text>
+          <line x1="240" y1="148" x2="240" y2="166" stroke="#111" marker-end="url(#a3)"/>
+          <rect x="115" y="166" width="250" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="188" text-anchor="middle" font-size="12" font-family="Arial">Official card if already issued</text>
+          <line x1="240" y1="202" x2="240" y2="224" stroke="#111" marker-end="url(#a3)"/>
+          <polygon points="240,224 318,270 240,316 162,270" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="266" text-anchor="middle" font-size="12" font-family="Arial">Upload notes?</text>
+          <text x="240" y="280" text-anchor="middle" font-size="10" font-family="Arial">PDF, Word, or photo</text>
+          <path d="M162 270 H50 V680 H230" fill="none" stroke="#111" marker-end="url(#a3)"/>
+          <text x="36" y="264" font-size="11" font-family="Arial">No</text>
+          <path d="M318 270 H400 V330" fill="none" stroke="#111" marker-end="url(#a3)"/>
+          <text x="408" y="264" font-size="11" font-family="Arial">Yes</text>
+          <rect x="320" y="330" width="160" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="400" y="347" text-anchor="middle" font-size="11" font-family="Arial">Extract text</text>
+          <text x="400" y="362" text-anchor="middle" font-size="11" font-family="Arial">redact identity</text>
+          <line x1="400" y1="370" x2="400" y2="392" stroke="#111" marker-end="url(#a3)"/>
+          <polygon points="400,392 470,436 400,480 330,436" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="400" y="432" text-anchor="middle" font-size="11" font-family="Arial">Readable</text>
+          <text x="400" y="446" text-anchor="middle" font-size="11" font-family="Arial">class notes?</text>
+          <path d="M330 436 H200 V510" fill="none" stroke="#111" marker-end="url(#a3)"/>
+          <text x="206" y="430" font-size="11" font-family="Arial">No</text>
+          <rect x="120" y="510" width="160" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="200" y="532" text-anchor="middle" font-size="11" font-family="Arial">Show upload error</text>
+          <path d="M400 480 V560" fill="none" stroke="#111" marker-end="url(#a3)"/>
+          <text x="408" y="520" font-size="11" font-family="Arial">Yes</text>
+          <rect x="320" y="560" width="160" height="40" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="400" y="577" text-anchor="middle" font-size="11" font-family="Arial">Plan, flashcards,</text>
+          <text x="400" y="592" text-anchor="middle" font-size="11" font-family="Arial">quiz, or chat</text>
+          <path d="M200 546 V680" fill="none" stroke="#111"/>
+          <path d="M400 600 V680 H310" fill="none" stroke="#111" marker-end="url(#a3)"/>
+          <ellipse cx="270" cy="680" rx="40" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="270" y="684" text-anchor="middle" font-size="12" font-family="Arial">End</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="desktop">
+      <h2>4. Desktop flowchart — registrar console</h2>
+      <p class="note">Windows Electron app. Professors cannot encode grades here; they are sent to the web workspace. The registrar does not approve each grade. The official card appears after professors submit all finals.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 500 620" role="img" aria-label="Registrar desktop flowchart">
+          <defs>
+            <marker id="a4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <ellipse cx="240" cy="24" rx="46" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="28" text-anchor="middle" font-size="12" font-family="Arial">Start</text>
+          <line x1="240" y1="40" x2="240" y2="58" stroke="#111" marker-end="url(#a4)"/>
+          <rect x="125" y="58" width="230" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="80" text-anchor="middle" font-size="12" font-family="Arial">Log in as registrar</text>
+          <line x1="240" y1="94" x2="240" y2="116" stroke="#111" marker-end="url(#a4)"/>
+          <polygon points="240,116 318,164 240,212 162,164" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="160" text-anchor="middle" font-size="12" font-family="Arial">Role = admin?</text>
+          <path d="M162 164 H100 V250" fill="none" stroke="#111" marker-end="url(#a4)"/>
+          <text x="52" y="158" font-size="11" font-family="Arial">No</text>
+          <rect x="20" y="250" width="160" height="50" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="100" y="270" text-anchor="middle" font-size="11" font-family="Arial">Professor: use web</text>
+          <text x="100" y="286" text-anchor="middle" font-size="11" font-family="Arial">Student: use mobile</text>
+          <path d="M318 164 H385 V250" fill="none" stroke="#111" marker-end="url(#a4)"/>
+          <text x="392" y="158" font-size="11" font-family="Arial">Yes</text>
+          <rect x="310" y="250" width="150" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="385" y="272" text-anchor="middle" font-size="12" font-family="Arial">File vault</text>
+          <line x1="385" y1="286" x2="385" y2="308" stroke="#111" marker-end="url(#a4)"/>
+          <rect x="310" y="308" width="150" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="385" y="330" text-anchor="middle" font-size="12" font-family="Arial">Create accounts</text>
+          <line x1="385" y1="344" x2="385" y2="366" stroke="#111" marker-end="url(#a4)"/>
+          <rect x="300" y="366" width="170" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="385" y="388" text-anchor="middle" font-size="12" font-family="Arial">Lock grading period</text>
+          <line x1="385" y1="402" x2="385" y2="424" stroke="#111" marker-end="url(#a4)"/>
+          <rect x="310" y="424" width="150" height="36" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="385" y="446" text-anchor="middle" font-size="12" font-family="Arial">Audit and backup</text>
+          <path d="M100 300 V590 H200" fill="none" stroke="#111" marker-end="url(#a4)"/>
+          <path d="M385 460 V590 H280" fill="none" stroke="#111" marker-end="url(#a4)"/>
+          <ellipse cx="240" cy="590" rx="40" ry="16" fill="#fff" stroke="#111" stroke-width="1.6"/>
+          <text x="240" y="594" text-anchor="middle" font-size="12" font-family="Arial">End</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="erd">
+      <h2>5. Entity-relationship diagram</h2>
+      <p class="note">Chen-style logical ERD of <code>holyface_amgs</code>. <code>students.lrn</code> is labeled student number. <code>teachers</code> is the professor profile. Official cards are issued by the API for an enrollment, not approved one-by-one by the registrar.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 980 600" role="img" aria-label="Chen ERD of Holy Face AMGS">
+          <defs>
+            <style>
+              .e { fill:#fff; stroke:#111; stroke-width:1.6; }
+              .d { fill:#fff; stroke:#111; stroke-width:1.5; }
+              .o { fill:#fff; stroke:#111; stroke-width:1.2; }
+              .t { font-family: Arial, Helvetica, sans-serif; fill:#111; }
+            </style>
+          </defs>
+          <path d="M160 86 V140" fill="none" stroke="#111"/>
+          <path d="M160 180 V270 H390" fill="none" stroke="#111"/>
+          <path d="M490 86 V140" fill="none" stroke="#111"/>
+          <path d="M490 180 V248" fill="none" stroke="#111"/>
+          <path d="M820 86 V140" fill="none" stroke="#111"/>
+          <path d="M820 180 V330 H610 V380" fill="none" stroke="#111"/>
+          <path d="M90 86 V100 H8 V340 H360 V380" fill="none" stroke="#111"/>
+          <path d="M360 420 V460" fill="none" stroke="#111"/>
+          <path d="M390 270 H125 V380" fill="none" stroke="#111"/>
+          <path d="M125 420 V460" fill="none" stroke="#111"/>
+          <path d="M610 420 V460" fill="none" stroke="#111"/>
+          <path d="M590 292 V350 H835 V380" fill="none" stroke="#111"/>
+          <path d="M835 420 V460" fill="none" stroke="#111"/>
+          <path d="M90 71 H54" fill="none" stroke="#111"/>
+          <path d="M160 50 V29" fill="none" stroke="#111"/>
+          <path d="M490 50 V29" fill="none" stroke="#111"/>
+          <path d="M820 50 V29" fill="none" stroke="#111"/>
+          <path d="M390 270 H354" fill="none" stroke="#111"/>
+          <path d="M590 270 H636" fill="none" stroke="#111"/>
+          <path d="M125 502 V528" fill="none" stroke="#111"/>
+          <path d="M210 481 H250 V528" fill="none" stroke="#111"/>
+
+          <text class="t" x="148" y="118" font-size="11">1</text>
+          <text class="t" x="250" y="262" font-size="11">M</text>
+          <text class="t" x="500" y="118" font-size="11">1</text>
+          <text class="t" x="500" y="220" font-size="11">M</text>
+          <text class="t" x="832" y="118" font-size="11">1</text>
+          <text class="t" x="630" y="322" font-size="11">M</text>
+          <text class="t" x="108" y="448" font-size="11">M</text>
+          <text class="t" x="622" y="448" font-size="11">M</text>
+          <text class="t" x="812" y="448" font-size="11">1</text>
+          <text class="t" x="342" y="448" font-size="11">M</text>
+
+          <rect class="e" x="90" y="50" width="140" height="36"/>
+          <text class="t" x="160" y="73" text-anchor="middle" font-size="14" font-weight="700">Student</text>
+          <rect class="e" x="420" y="50" width="140" height="36"/>
+          <text class="t" x="490" y="73" text-anchor="middle" font-size="14" font-weight="700">Professor</text>
+          <rect class="e" x="750" y="50" width="140" height="36"/>
+          <text class="t" x="820" y="73" text-anchor="middle" font-size="14" font-weight="700">Registrar</text>
+          <rect class="e" x="390" y="248" width="200" height="44"/>
+          <text class="t" x="490" y="275" text-anchor="middle" font-size="14" font-weight="700">Quarterly grade</text>
+          <rect class="e" x="40" y="460" width="170" height="42"/>
+          <text class="t" x="125" y="486" text-anchor="middle" font-size="13" font-weight="700">Grade component</text>
+          <rect class="e" x="280" y="460" width="160" height="42"/>
+          <text class="t" x="360" y="486" text-anchor="middle" font-size="13" font-weight="700">Study material</text>
+          <rect class="e" x="530" y="460" width="160" height="42"/>
+          <text class="t" x="610" y="486" text-anchor="middle" font-size="13" font-weight="700">Registrar file</text>
+          <rect class="e" x="740" y="460" width="190" height="42"/>
+          <text class="t" x="835" y="486" text-anchor="middle" font-size="13" font-weight="700">Official report card</text>
+
+          <polygon class="d" points="160,140 212,160 160,180 108,160"/>
+          <text class="t" x="160" y="164" text-anchor="middle" font-size="11">has</text>
+          <polygon class="d" points="490,140 548,160 490,180 432,160"/>
+          <text class="t" x="490" y="164" text-anchor="middle" font-size="11">encodes</text>
+          <polygon class="d" points="820,140 878,160 820,180 762,160"/>
+          <text class="t" x="820" y="164" text-anchor="middle" font-size="11">keeps</text>
+          <polygon class="d" points="125,380 187,400 125,420 63,400"/>
+          <text class="t" x="125" y="404" text-anchor="middle" font-size="11">made of</text>
+          <polygon class="d" points="360,380 422,400 360,420 298,400"/>
+          <text class="t" x="360" y="404" text-anchor="middle" font-size="11">uploads</text>
+          <polygon class="d" points="610,380 672,400 610,420 548,400"/>
+          <text class="t" x="610" y="404" text-anchor="middle" font-size="11">stores</text>
+          <polygon class="d" points="835,380 903,400 835,420 767,400"/>
+          <text class="t" x="835" y="404" text-anchor="middle" font-size="11">snapshot</text>
+
+          <ellipse class="o" cx="28" cy="71" rx="26" ry="13"/>
+          <text class="t" x="28" y="75" text-anchor="middle" font-size="10">id PK</text>
+          <ellipse class="o" cx="160" cy="16" rx="62" ry="13"/>
+          <text class="t" x="160" y="20" text-anchor="middle" font-size="10">student number</text>
+          <ellipse class="o" cx="490" cy="16" rx="30" ry="13"/>
+          <text class="t" x="490" y="20" text-anchor="middle" font-size="10">id PK</text>
+          <ellipse class="o" cx="820" cy="16" rx="30" ry="13"/>
+          <text class="t" x="820" y="20" text-anchor="middle" font-size="10">id PK</text>
+          <ellipse class="o" cx="318" cy="270" rx="36" ry="13"/>
+          <text class="t" x="318" y="274" text-anchor="middle" font-size="10">subject</text>
+          <ellipse class="o" cx="668" cy="270" rx="32" ry="13"/>
+          <text class="t" x="668" y="274" text-anchor="middle" font-size="10">period</text>
+          <ellipse class="o" cx="125" cy="542" rx="50" ry="13"/>
+          <text class="t" x="125" y="546" text-anchor="middle" font-size="10">WW / PT / QA</text>
+          <ellipse class="o" cx="250" cy="542" rx="30" ry="13"/>
+          <text class="t" x="250" y="546" text-anchor="middle" font-size="10">score</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="dfd0">
+      <h2>6. DFD Level 0 — context diagram</h2>
+      <p class="note">External entities around process 0. Parents are redirected to the school portal. AMGS does not send them grade payloads on the public site.</p>
+      <div class="legend">
+        <div><strong>Gray rectangle</strong> External entity</div>
+        <div><strong>Circle</strong> Process</div>
+        <div><strong>Open rectangle</strong> Data store (Level 1–2)</div>
+        <div><strong>Arrow</strong> Data flow</div>
+      </div>
+      <div class="diagram">
+        <svg viewBox="0 0 960 480" role="img" aria-label="DFD Level 0 context diagram">
+          <defs>
+            <marker id="a0" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <rect x="40" y="30" width="150" height="40" fill="#d9d9d9" stroke="#111"/>
+          <text x="115" y="54" text-anchor="middle" font-size="13" font-family="Arial">Student</text>
+          <rect x="40" y="200" width="150" height="40" fill="#d9d9d9" stroke="#111"/>
+          <text x="115" y="224" text-anchor="middle" font-size="13" font-family="Arial">Professor</text>
+          <rect x="40" y="400" width="150" height="40" fill="#d9d9d9" stroke="#111"/>
+          <text x="115" y="424" text-anchor="middle" font-size="13" font-family="Arial">Registrar</text>
+          <circle cx="500" cy="230" r="72" fill="#fff" stroke="#111" stroke-width="1.8"/>
+          <text x="500" y="224" text-anchor="middle" font-size="13" font-family="Arial">0</text>
+          <text x="500" y="242" text-anchor="middle" font-size="13" font-family="Arial">Holy Face AMGS</text>
+          <rect x="790" y="210" width="150" height="40" fill="#d9d9d9" stroke="#111"/>
+          <text x="865" y="234" text-anchor="middle" font-size="13" font-family="Arial">Gemini AI</text>
+
+          <path d="M190 40 H500 V158" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="250" y="32" font-size="11" font-family="Arial">Notes file</text>
+          <path d="M452 176 H190 V70" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="210" y="166" font-size="11" font-family="Arial">Grades, ID, card, study tools</text>
+
+          <path d="M190 210 H431" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="230" y="202" font-size="11" font-family="Arial">WW / PT / QA scores</text>
+          <path d="M428 232 H190" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="215" y="250" font-size="11" font-family="Arial">Class grid, quarterly grade</text>
+
+          <path d="M190 412 H336 V278 H446" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="200" y="402" font-size="11" font-family="Arial">Accounts, files, locks</text>
+          <path d="M500 302 V438 H190" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="250" y="428" font-size="11" font-family="Arial">Vault, audit</text>
+
+          <path d="M572 218 H790" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="600" y="210" font-size="11" font-family="Arial">Notes text, never identity</text>
+          <path d="M790 244 H571" fill="none" stroke="#111" marker-end="url(#a0)"/>
+          <text x="600" y="262" font-size="11" font-family="Arial">Plan, flashcards, quiz, chat</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="dfd1">
+      <h2>7. DFD Level 1 — major processes</h2>
+      <p class="note">AMGS exploded into five processes and data stores that match the MySQL schema.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 980 560" role="img" aria-label="DFD Level 1">
+          <defs>
+            <marker id="a5" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <rect x="20" y="30" width="130" height="36" fill="#d9d9d9" stroke="#111"/>
+          <text x="85" y="52" text-anchor="middle" font-size="12" font-family="Arial">Student</text>
+          <rect x="20" y="262" width="130" height="36" fill="#d9d9d9" stroke="#111"/>
+          <text x="85" y="284" text-anchor="middle" font-size="12" font-family="Arial">Professor</text>
+          <rect x="20" y="490" width="130" height="36" fill="#d9d9d9" stroke="#111"/>
+          <text x="85" y="512" text-anchor="middle" font-size="12" font-family="Arial">Registrar</text>
+          <rect x="830" y="382" width="130" height="36" fill="#d9d9d9" stroke="#111"/>
+          <text x="895" y="404" text-anchor="middle" font-size="12" font-family="Arial">Gemini AI</text>
+
+          <circle cx="300" cy="48" r="34" fill="#cfe2f3" stroke="#111"/>
+          <text x="300" y="44" text-anchor="middle" font-size="11" font-family="Arial">1.0</text>
+          <text x="300" y="58" text-anchor="middle" font-size="10" font-family="Arial">Authenticate</text>
+          <circle cx="300" cy="160" r="34" fill="#cfe2f3" stroke="#111"/>
+          <text x="300" y="156" text-anchor="middle" font-size="11" font-family="Arial">2.0</text>
+          <text x="300" y="170" text-anchor="middle" font-size="10" font-family="Arial">Maintain</text>
+          <circle cx="300" cy="280" r="34" fill="#cfe2f3" stroke="#111"/>
+          <text x="300" y="276" text-anchor="middle" font-size="11" font-family="Arial">3.0</text>
+          <text x="300" y="290" text-anchor="middle" font-size="10" font-family="Arial">Encode</text>
+          <circle cx="300" cy="400" r="34" fill="#cfe2f3" stroke="#111"/>
+          <text x="300" y="396" text-anchor="middle" font-size="11" font-family="Arial">4.0</text>
+          <text x="300" y="410" text-anchor="middle" font-size="10" font-family="Arial">View / study</text>
+          <circle cx="300" cy="510" r="34" fill="#cfe2f3" stroke="#111"/>
+          <text x="300" y="506" text-anchor="middle" font-size="11" font-family="Arial">5.0</text>
+          <text x="300" y="520" text-anchor="middle" font-size="10" font-family="Arial">Issue card</text>
+
+          <rect x="560" y="30" width="200" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="572" y1="30" x2="572" y2="66" stroke="#111"/>
+          <text x="670" y="52" text-anchor="middle" font-size="11" font-family="Arial">D1 users / consent</text>
+          <rect x="560" y="100" width="200" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="572" y1="100" x2="572" y2="136" stroke="#111"/>
+          <text x="670" y="122" text-anchor="middle" font-size="11" font-family="Arial">D2 enrollments</text>
+          <rect x="560" y="170" width="200" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="572" y1="170" x2="572" y2="206" stroke="#111"/>
+          <text x="670" y="192" text-anchor="middle" font-size="11" font-family="Arial">D4 registrar files</text>
+          <rect x="560" y="250" width="200" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="572" y1="250" x2="572" y2="286" stroke="#111"/>
+          <text x="670" y="272" text-anchor="middle" font-size="11" font-family="Arial">D3 grades / finals</text>
+          <rect x="560" y="330" width="200" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="572" y1="330" x2="572" y2="366" stroke="#111"/>
+          <text x="670" y="352" text-anchor="middle" font-size="11" font-family="Arial">D5 locks / weights</text>
+          <rect x="560" y="410" width="200" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="572" y1="410" x2="572" y2="446" stroke="#111"/>
+          <text x="670" y="432" text-anchor="middle" font-size="11" font-family="Arial">D6 study sessions</text>
+
+          <path d="M150 48 H266" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M85 66 H12 V400 H266" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M150 280 H266" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M150 508 H180 V160 H266" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M300 82 V126" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M300 194 V246" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M300 314 V366" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M300 434 V476" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 48 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 148 H500 V118 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 172 H500 V188 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 268 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 294 H500 V348 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 400 H500 V428 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 510 H520 V268 H560" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M334 390 H830" fill="none" stroke="#111" marker-end="url(#a5)"/>
+          <path d="M830 418 H780 V410 H334" fill="none" stroke="#111" marker-end="url(#a5)"/>
+        </svg>
+      </div>
+    </section>
+
+    <section id="dfd2">
+      <h2>8. DFD Level 2 — process 3.0 Encode and compute grades</h2>
+      <p class="note">Explosion of professor encoding. Computation follows DepEd Order No. 8, s. 2015. Weights and the transmutation table are stored in MySQL.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 960 500" role="img" aria-label="DFD Level 2 encode grades">
+          <defs>
+            <marker id="a6" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#111"/></marker>
+          </defs>
+          <rect x="20" y="40" width="190" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="32" y1="40" x2="32" y2="76" stroke="#111"/>
+          <text x="115" y="62" text-anchor="middle" font-size="11" font-family="Arial">D2 class / enrollments</text>
+          <rect x="20" y="142" width="190" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="32" y1="142" x2="32" y2="178" stroke="#111"/>
+          <text x="115" y="164" text-anchor="middle" font-size="11" font-family="Arial">D5 locks / weights</text>
+          <rect x="20" y="232" width="130" height="40" fill="#d9d9d9" stroke="#111"/>
+          <text x="85" y="256" text-anchor="middle" font-size="12" font-family="Arial">Professor</text>
+          <rect x="20" y="322" width="190" height="36" fill="#d9ead3" stroke="#111"/>
+          <line x1="32" y1="322" x2="32" y2="358" stroke="#111"/>
+          <text x="115" y="344" text-anchor="middle" font-size="11" font-family="Arial">D3 scores / grades</text>
+
+          <circle cx="400" cy="70" r="36" fill="#cfe2f3" stroke="#111"/>
+          <text x="400" y="66" text-anchor="middle" font-size="11" font-family="Arial">3.1</text>
+          <text x="400" y="80" text-anchor="middle" font-size="10" font-family="Arial">Load grid</text>
+          <circle cx="400" cy="160" r="36" fill="#cfe2f3" stroke="#111"/>
+          <text x="400" y="156" text-anchor="middle" font-size="11" font-family="Arial">3.2</text>
+          <text x="400" y="170" text-anchor="middle" font-size="10" font-family="Arial">Check lock</text>
+          <circle cx="400" cy="250" r="36" fill="#cfe2f3" stroke="#111"/>
+          <text x="400" y="246" text-anchor="middle" font-size="11" font-family="Arial">3.3</text>
+          <text x="400" y="260" text-anchor="middle" font-size="10" font-family="Arial">Save scores</text>
+          <circle cx="400" cy="340" r="36" fill="#cfe2f3" stroke="#111"/>
+          <text x="400" y="336" text-anchor="middle" font-size="11" font-family="Arial">3.4</text>
+          <text x="400" y="350" text-anchor="middle" font-size="10" font-family="Arial">Compute SUM</text>
+          <circle cx="400" cy="430" r="36" fill="#cfe2f3" stroke="#111"/>
+          <text x="400" y="426" text-anchor="middle" font-size="11" font-family="Arial">3.5</text>
+          <text x="400" y="440" text-anchor="middle" font-size="10" font-family="Arial">Submit</text>
+
+          <rect x="720" y="200" width="220" height="70" fill="#fff" stroke="#111"/>
+          <text x="830" y="230" text-anchor="middle" font-size="12" font-family="Arial">Shown on screen</text>
+          <text x="830" y="250" text-anchor="middle" font-size="12" font-family="Arial">and official card</text>
+
+          <path d="M210 70 H364" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M210 160 H364" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M210 176 H280 V340 H364" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M150 252 H364" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M210 340 H364" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M400 106 V124" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M400 196 V214" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M400 286 V304" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M400 376 V394" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M436 70 H830 V200" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M436 250 H720" fill="none" stroke="#111" marker-end="url(#a6)"/>
+          <path d="M436 430 H830 V270" fill="none" stroke="#111" marker-end="url(#a6)"/>
+        </svg>
+      </div>
+      <ol class="rules">
+        <li>Percentage Score = (total score ÷ total highest possible score) × 100 (SUM; absent/excused skipped)</li>
+        <li>Weighted Score = Percentage Score × component weight</li>
+        <li>Initial Grade = WW + PT + QA weighted scores</li>
+        <li>Quarterly Grade = transmutation table lookup</li>
+        <li>Final Grade = average of semester quarters, rounded</li>
+        <li>Official card = JSON snapshot when every assigned subject has submitted finals</li>
+      </ol>
+    </section>
+  </main>
+  <footer>Holy Face AMGS diagrams · File → Print to save as PDF</footer>
+</body>
+</html>

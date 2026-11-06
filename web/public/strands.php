@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require dirname(__DIR__) . '/includes/bootstrap.php';
+require __DIR__ . '/_init.php';
 render('strands', [
     'pageTitle' => 'SHS Strands — ABM, HUMSS, ICT, HE, STEM | Holy Face',
     'pageDescription' => 'Senior High School strands at Holy Face of Jesus Lyceum of San Jose, Inc.',

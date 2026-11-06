@@ -5,6 +5,7 @@ namespace HolyFace\Api\Services;
 
 use HolyFace\Api\Database\Connection;
 use PDO;
+use HolyFace\Api\Services\AcademicCalendar;
 
 /**
  * Configurable DepEd-style grade computation.
@@ -22,8 +23,9 @@ use PDO;
  *     (DO 8, s. 2015 Appendix 2, as commonly republished for K to 12). Stored in
  *     `transmutation_table` so the school can edit bands.
  *   • Lowest passing transmuted grade is 75. Stored in `grading_settings.passing_mark`.
- *   • For a semester subject, Final Grade = average of the two quarterly grades,
+ *   • Grade 12 semester subject: Final Grade = average of the two quarterly grades,
  *     rounded to the nearest whole number (DO 8, s. 2015, reporting of grades).
+ *   • Grade 11 MATATAG: Final Grade = average of the three term grades.
  * - General Average = average of final grades across subjects. Passed/Failed uses
  *   the stored passing mark (default 75).
  *
@@ -263,13 +265,24 @@ final class GradeComputationService
         $q3 = $byQ[3] ?? null;
         $q4 = $byQ[4] ?? null;
 
-        // Rule 5 — Final Grade for a semester subject = average of the two quarterly
-        // grades, rounded to the nearest whole number (DO 8, s. 2015).
-        $sem1 = $this->semesterFinal($q1, $q2);
-        $sem2 = $this->semesterFinal($q3, $q4);
+        $gradeLevel = $this->gradeLevelForCsa($csaId);
+        $cal = AcademicCalendar::forGrade($gradeLevel);
 
-        $semesters = array_values(array_filter([$sem1, $sem2], fn ($v) => $v !== null));
-        $final = $semesters ? (float) round(array_sum($semesters) / count($semesters)) : null;
+        if ($cal['mode'] === 'terms') {
+            // Grade 11 MATATAG: three terms, no semesters. Final = average of encoded terms.
+            $q4 = null;
+            $sem1 = null;
+            $sem2 = null;
+            $terms = array_values(array_filter([$q1, $q2, $q3], fn ($v) => $v !== null));
+            $final = $terms ? (float) round(array_sum($terms) / count($terms)) : null;
+        } else {
+            // Grade 12: Final Grade for a semester subject = average of the two quarterly
+            // grades, rounded to the nearest whole number (DO 8, s. 2015).
+            $sem1 = $this->semesterFinal($q1, $q2);
+            $sem2 = $this->semesterFinal($q3, $q4);
+            $semesters = array_values(array_filter([$sem1, $sem2], fn ($v) => $v !== null));
+            $final = $semesters ? (float) round(array_sum($semesters) / count($semesters)) : null;
+        }
         $action = $final !== null ? ($final >= $passing ? 'PASSED' : 'FAILED') : null;
 
         $pdo->prepare(
@@ -298,5 +311,19 @@ final class GradeComputationService
             return (float) round(($a + $b) / 2);
         }
         return $a ?? $b;
+    }
+
+    private function gradeLevelForCsa(int $csaId): int
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT cs.grade_level
+             FROM class_subject_assignments csa
+             INNER JOIN class_sections cs ON cs.id = csa.class_section_id
+             WHERE csa.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$csaId]);
+        $level = (int) $stmt->fetchColumn();
+        return $level > 0 ? $level : 12;
     }
 }

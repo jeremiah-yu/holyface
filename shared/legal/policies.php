@@ -108,12 +108,12 @@ return [
                 [
                     'id' => '2.2',
                     'title' => 'What we collect',
-                    'body' => "Identity and enrollment: full name, birthdate, LRN, strand, grade level, section, school year, photo, previous school.\nContact: email, phone, current and permanent address, emergency contact (name, relationship, phone), parent or guardian details.\nAcademic: grades, class records, attendance and progress indicators, early-warning flags.\nTechnical: login times, device type, and audit logs of grade changes.\nStudy activity: topics, notes, and quiz results a student enters into the AI study tools.",
+                    'body' => "Identity and enrollment: full name, birthdate, LRN, strand, grade level, section, school year, photo, previous school.\nContact: email, phone, current and permanent address, emergency contact (name, relationship, phone), parent or guardian details.\nAcademic: grades, class records, and attendance and progress indicators.\nTechnical: login times, device type, and audit logs of grade changes.\nStudy activity: topics, notes, and quiz results a student enters into the AI study tools.",
                 ],
                 [
                     'id' => '2.3',
                     'title' => 'Why we collect it',
-                    'body' => "To manage enrollment, class records, grading, and the digital student ID.\nTo monitor academic progress and alert teachers, students, and guardians early.\nTo provide study tools, announcements, and school communication.\nTo keep the System secure and to meet legal and DepEd reporting duties.",
+                    'body' => "To manage enrollment, class records, grading, and the digital student ID.\nTo monitor academic progress and share grades with teachers, students, and guardians.\nTo provide study tools, announcements, and school communication.\nTo keep the System secure and to meet legal and DepEd reporting duties.",
                 ],
                 [
                     'id' => '2.4',

@@ -15,15 +15,15 @@ $strands = cfg()['strands'];
       </p>
       <div class="hero-actions">
         <a class="btn btn-gold" href="<?= e($portal) ?>" rel="noopener">Student/Parent Portal</a>
-        <a class="btn btn-outline" href="#how-it-works">See How It Works</a>
+        <a class="btn btn-outline" href="<?= e(professor_workspace_url()) ?>">Professor login</a>
       </div>
     </div>
     <aside class="hero-card card" aria-label="What AMGS is">
       <h2>Three apps, one school record</h2>
       <ul class="check-list">
-        <li><strong>Web</strong> — this information site</li>
-        <li><strong>Mobile</strong> — grades and study tools</li>
-        <li><strong>Desktop</strong> — teacher grade encoding</li>
+        <li><strong>Web</strong> — this site plus the professor gradebook</li>
+        <li><strong>Mobile</strong> — student grades and study tools</li>
+        <li><strong>Desktop</strong> — Registrar files and system maintenance</li>
       </ul>
       <p class="muted small">AMGS is used by Holy Face. It is not a commercial product sold independently of the school.</p>
     </aside>
@@ -61,7 +61,7 @@ $strands = cfg()['strands'];
 
 <section id="roles" class="section section-soft">
   <div class="container">
-    <h2>For students and teachers</h2>
+    <h2>For students, professors, and the Registrar</h2>
     <div class="role-grid">
       <article class="card role-card">
         <p class="eyebrow">Student</p>
@@ -69,9 +69,14 @@ $strands = cfg()['strands'];
         <p>Grades and study tools on a phone. Mag-log in with the account issued by the Registrar.</p>
       </article>
       <article class="card role-card">
-        <p class="eyebrow">Teacher</p>
+        <p class="eyebrow">Professor</p>
+        <h3>Web workspace</h3>
+        <p>Encode written work, performance tasks, and quarterly assessments in the browser. Grades compute automatically. Class lists stay on school servers.</p>
+      </article>
+      <article class="card role-card">
+        <p class="eyebrow">Registrar</p>
         <h3>Desktop app</h3>
-        <p>Encode written work, performance tasks, and quarterly assessments. Grades compute automatically. Class lists stay on school servers.</p>
+        <p>Keep official files, create accounts, lock grading periods, and review audit logs on the office PC.</p>
       </article>
     </div>
   </div>
@@ -82,7 +87,7 @@ $strands = cfg()['strands'];
     <h2>How it works</h2>
     <ol class="steps">
       <li><strong>Enroll.</strong> Complete SHS requirements. The Registrar issues AMGS access.</li>
-      <li><strong>Teachers encode.</strong> Scores are entered in the desktop app using DepEd-style components.</li>
+      <li><strong>Professors encode.</strong> Scores are entered in the web workspace using DepEd-style components.</li>
       <li><strong>Students check progress.</strong> Open the portal or mobile app to see your grades.</li>
     </ol>
     <p class="center mt"><a class="btn btn-navy" href="<?= e(url('how-it-works.php')) ?>">Read the full walkthrough</a></p>
@@ -122,12 +127,12 @@ $strands = cfg()['strands'];
       </div>
     </article>
     <article class="card download-card">
-      <h2>Teacher desktop app</h2>
-      <p>Grade encoding and class lists for faculty.</p>
+      <h2>Registrar desktop app</h2>
+      <p>File vault and system maintenance for the Registrar.</p>
       <div class="qr-block">
         <img
           src="<?= e(qr_image_url(download_url('desktop'), 180)) ?>"
-          alt="QR code to download the Holy Face teacher desktop app"
+          alt="QR code to download the Holy Face Registrar desktop app"
           width="180"
           height="180"
         >

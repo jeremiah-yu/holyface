@@ -1,0 +1,3 @@
+<FilesMatch "\.(apk|exe|part[0-9]+)$">
+  Require all denied
+</FilesMatch>

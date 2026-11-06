@@ -1,6 +1,7 @@
 import { ClipboardEvent, KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
-import { initialGrade, parseTsv, percentageScore, validateScore } from '../compute';
+import { periodLabel } from '../calendar';
+import { initialGrade, parseSheet, percentageScore, validateScore } from '../compute';
 import type { Cell, GradeItem, GridPayload, GridStudent, Section } from '../types';
 
 type Focus = { row: number; col: number };
@@ -199,7 +200,7 @@ export default function GradeGrid({
     const text = e.clipboardData.getData('text/plain');
     if (!text.includes('\t') && !text.includes('\n')) return;
     e.preventDefault();
-    const table = parseTsv(text);
+    const table = parseSheet(text);
     table.forEach((line, ri) => {
       line.forEach((val, ci) => {
         const student = grid.students[focus.row + ri];
@@ -233,21 +234,38 @@ export default function GradeGrid({
   }
 
   async function submitFinals() {
-    if (!window.confirm('Submit final grades for this subject? An official grading card is issued only after every subject of the student has been submitted.')) {
+    if (!window.confirm('Submit final grades for this subject? The class adviser generates and releases official cards after every subject is in.')) {
       return;
     }
-    const res = await api<{ report_cards?: { issued: number; waiting: number } }>('/grades/submit-final', token, {
+    const res = await api<{ advisory?: { ready: number; waiting: number } }>('/grades/submit-final', token, {
       method: 'POST',
       body: JSON.stringify({ class_subject_assignment_id: section.class_subject_assignment_id, confirmed: true }),
     });
-    const cards = res.report_cards;
-    if (cards) {
+    const ready = res.advisory;
+    if (ready) {
       setMsg(
-        `Finals submitted. Official cards issued: ${cards.issued}. Still waiting on other subjects: ${cards.waiting}.`
+        `Finals submitted. Ready for the adviser: ${ready.ready}. Still waiting on other subjects: ${ready.waiting}.`
       );
     } else {
       setMsg('Final grades submitted.');
     }
+  }
+
+  function importSheet(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? '');
+      const table = parseSheet(text);
+      table.forEach((line, ri) => {
+        line.forEach((val, ci) => {
+          const student = grid.students[ri];
+          const item = items[ci];
+          if (student && item) commit(student, item, val);
+        });
+      });
+      setMsg(`Imported ${file.name}`);
+    };
+    reader.readAsText(file);
   }
 
   const groups = useMemo(() => {
@@ -275,11 +293,24 @@ export default function GradeGrid({
               {t.short}
             </button>
           ))}
+        <label className="ghost" style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+          Import Excel/CSV
+          <input
+            type="file"
+            accept=".csv,.tsv,.txt"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) importSheet(file);
+              e.target.value = '';
+            }}
+          />
+        </label>
         <button type="button" onClick={submitFinals}>
           Submit finals
         </button>
       </div>
-      {readOnly && <p className="warn sheet-banner">This quarter is locked. Ask the Registrar to unlock it.</p>}
+      {readOnly && <p className="warn sheet-banner">This period is locked. Ask the Registrar to unlock it.</p>}
       <div className="formula-bar">
         <span className="formula-name" title={formulaName}>
           {formulaName || 'Cell'}
@@ -386,8 +417,8 @@ export default function GradeGrid({
         </table>
       </div>
       <div className="sheet-tabs">
-        <span className="sheet-tab">Q{quarter}</span>
-        <span className="sheet-hint">Enter a score · A = absent · E = excused · paste from Excel · autosaves</span>
+        <span className="sheet-tab">{grid.period?.short ?? periodLabel(section.grade_level, quarter)}</span>
+        <span className="sheet-hint">Enter a score · A = absent · E = excused · paste or import Excel/CSV · autosaves</span>
       </div>
     </div>
   );

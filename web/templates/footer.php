@@ -7,7 +7,7 @@ $year = date('Y');
   <div class="container footer-grid">
     <div>
       <a class="brand brand-footer" href="<?= e(url('index.php')) ?>">
-        <img src="<?= e(url($school['logo'])) ?>" alt="" width="44" height="44" loading="lazy">
+        <img src="<?= e(url($school['logo'])) ?>?v=2" alt="" width="44" height="44" loading="lazy">
         <span><?= e($school['short']) ?> AMGS</span>
       </a>
       <p><?= e($school['name']) ?></p>
@@ -60,5 +60,12 @@ $year = date('Y');
   </div>
 </div>
 <script src="<?= e(url('assets/js/site.js')) ?>" defer></script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register(<?= json_encode(url('sw.js')) ?>).catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>

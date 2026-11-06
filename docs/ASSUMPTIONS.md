@@ -18,9 +18,9 @@
 
 - Web login CSRF is session-based; API JSON clients use JWT only.
 - Refresh token rotation endpoint is stored but not exposed in clients v1 (access token TTL 1 hour).
-- Mobile has no offline grade encoding (students are read-mostly). Teacher desktop queues edits encrypted and syncs when the API is reachable; conflicts surface if the server row is newer.
+- Mobile has no offline grade encoding (students are read-mostly). The teacher web workspace queues edits in session storage and syncs when the API is reachable; the Registrar desktop app encrypts its cache with Electron safeStorage.
 - No push notifications for grade posts.
-- Teacher desktop prints class record / report of grades via the system print dialog (Save as PDF) and Excel-compatible CSV. Not a paginated SF9/SF10 template.
+- Teacher web workspace prints class record / report of grades via the browser print dialog (Save as PDF) and Excel-compatible CSV. Not a paginated SF9/SF10 template.
 - Rate limiting is IP + DB based; distributed attacks need WAF in production.
 - `grade_components` duplicate labels are allowed; UX deduplication not enforced.
 - Android/iOS store deployment (signing, privacy labels) not covered in setup guide.

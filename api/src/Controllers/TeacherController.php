@@ -6,6 +6,7 @@ namespace HolyFace\Api\Controllers;
 use HolyFace\Api\Database\Connection;
 use HolyFace\Api\Http\Request;
 use HolyFace\Api\Http\Response;
+use HolyFace\Api\Services\AcademicCalendar;
 use PDO;
 
 final class TeacherController
@@ -58,7 +59,13 @@ final class TeacherController
                         FROM class_subject_assignments csa
                         INNER JOIN teachers t ON t.id = csa.teacher_id
                         WHERE t.user_id = ?
+                        UNION
+                        SELECT cs2.id
+                        FROM class_sections cs2
+                        INNER JOIN teachers t2 ON t2.id = cs2.adviser_teacher_id
+                        WHERE t2.user_id = ?
                       ) scoped ON scoped.class_section_id = cs.id';
+            $params[] = (int) $auth['user']['id'];
             $params[] = (int) $auth['user']['id'];
         }
         if ($sectionId) {
@@ -110,7 +117,8 @@ final class TeacherController
                        sy.id AS school_year_id, sy.label AS school_year, sy.is_current,
                        sub.id AS subject_id, sub.title AS subject_title, sub.subject_code, sub.weight_profile_code,
                        csa.id AS class_subject_assignment_id, tu.full_name AS teacher_name,
-                       gcw.written_work_pct, gcw.performance_task_pct, gcw.quarterly_assessment_pct
+                       gcw.written_work_pct, gcw.performance_task_pct, gcw.quarterly_assessment_pct,
+                       CASE WHEN adv.user_id = ? THEN 1 ELSE 0 END AS is_adviser
                 FROM class_subject_assignments csa
                 INNER JOIN class_sections cs ON cs.id = csa.class_section_id
                 INNER JOIN school_years sy ON sy.id = cs.school_year_id
@@ -118,8 +126,9 @@ final class TeacherController
                 INNER JOIN subjects sub ON sub.id = csa.subject_id
                 INNER JOIN teachers t ON t.id = csa.teacher_id
                 INNER JOIN users tu ON tu.id = t.user_id
+                LEFT JOIN teachers adv ON adv.id = cs.adviser_teacher_id
                 LEFT JOIN grade_component_weights gcw ON gcw.class_subject_assignment_id = csa.id';
-        $params = [];
+        $params = [(int) $auth['user']['id']];
         if ($auth['role'] === 'teacher') {
             $sql .= ' WHERE t.user_id = ?';
             $params[] = (int) $auth['user']['id'];
@@ -127,7 +136,12 @@ final class TeacherController
         $sql .= ' ORDER BY csa.id, sy.label DESC, cs.grade_level, st.code, cs.section_code, sub.title';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        Response::json(['success' => true, 'sections' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        $sections = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $row['calendar'] = AcademicCalendar::forGrade((int) $row['grade_level']);
+            $sections[] = $row;
+        }
+        Response::json(['success' => true, 'sections' => $sections]);
     }
 
     public function filters(Request $request, array $auth): void

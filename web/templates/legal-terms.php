@@ -6,7 +6,7 @@
 </section>
 <section class="section">
   <div class="container prose legal">
-    <p>These Terms govern your use of the Holy Face Academic Monitoring and Grading System (AMGS) promotional website and, where applicable, the related portal, mobile, and desktop apps operated for <strong>Holy Face of Jesus Lyceum of San Jose, Inc.</strong> (“the School”).</p>
+    <p>These Terms govern your use of the Holy Face Academic Monitoring and Grading System (AMGS) promotional website and, where applicable, the professor web workspace, mobile, and desktop apps operated for <strong>Holy Face of Jesus Lyceum of San Jose, Inc.</strong> (“the School”).</p>
     <h2>1. What AMGS is</h2>
     <p>AMGS is an internal academic monitoring tool of the School. This website explains the system. It is not a marketplace, not a separate school, and not an endorsement of any third-party vendor beyond the School’s own operations.</p>
     <h2>2. Accounts</h2>

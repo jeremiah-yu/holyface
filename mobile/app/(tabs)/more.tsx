@@ -4,7 +4,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { t } from '../../src/i18n';
 
 export default function MoreScreen() {
-  const { user, logout, lang, setLang, darkMode, setDarkMode, notifications, setNotifications, biometricEnabled, enableBiometric, colors } =
+  const { user, logout, lang, setLang, darkMode, setDarkMode, notifications, setNotifications, biometricEnabled, biometricReady, enableBiometric, colors } =
     useAuth();
 
   return (
@@ -20,7 +20,7 @@ export default function MoreScreen() {
       <View style={row}>
         <Text style={{ color: colors.text }}>{t(lang, 'language')}</Text>
         <Pressable onPress={() => setLang(lang === 'en' ? 'fil' : 'en')}>
-          <Text style={{ color: '#c9a227', fontWeight: '700' }}>{lang === 'en' ? 'English' : 'Filipino'}</Text>
+          <Text style={{ color: colors.link, fontWeight: '700' }}>{lang === 'en' ? 'English' : 'Filipino'}</Text>
         </Pressable>
       </View>
       <View style={row}>
@@ -38,6 +38,12 @@ export default function MoreScreen() {
           onValueChange={async (v) => {
             try {
               await enableBiometric(v);
+              if (v && !biometricReady) {
+                Alert.alert(
+                  'Biometrics',
+                  'Biometric login is on. Sign in with your password once. After that, the login screen can use fingerprint or face.'
+                );
+              }
             } catch (e: unknown) {
               Alert.alert('Biometrics', (e as Error).message);
             }
@@ -54,11 +60,11 @@ export default function MoreScreen() {
   );
 }
 
-function Row({ label, onPress, colors }: { label: string; onPress: () => void; colors: { text: string } }) {
+function Row({ label, onPress, colors }: { label: string; onPress: () => void; colors: { text: string; link: string } }) {
   return (
     <Pressable onPress={onPress} style={row}>
       <Text style={{ color: colors.text }}>{label}</Text>
-      <Text style={{ color: '#c9a227' }}>→</Text>
+      <Text style={{ color: colors.link }}>→</Text>
     </Pressable>
   );
 }

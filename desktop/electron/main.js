@@ -2,6 +2,64 @@ const { app, BrowserWindow, ipcMain, safeStorage, dialog } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { isChallengeHtml, solveChallenge } = require('./infinityfree');
+
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+let hostCookie = '';
+let hostReady = false;
+
+function apiBaseFromUrl(url) {
+  try {
+    const u = new URL(url);
+    return `${u.origin}/api/public`;
+  } catch {
+    return 'https://holyface.infinityfreeapp.com/api/public';
+  }
+}
+
+async function hostFetch(url, spec = {}) {
+  const headers = { ...(spec.headers || {}), 'User-Agent': BROWSER_UA };
+  if (hostCookie) {
+    headers.Cookie = hostCookie;
+  }
+  const init = { method: spec.method || 'GET', headers };
+  if (spec.body != null && init.method !== 'GET' && init.method !== 'HEAD') {
+    init.body = spec.body;
+  }
+  const res = await fetch(url, init);
+  const text = await res.text();
+  return {
+    status: res.status,
+    ok: res.ok,
+    text,
+    contentType: res.headers.get('content-type') || '',
+  };
+}
+
+async function ensureHostCookie(apiBase) {
+  if (hostReady) {
+    return;
+  }
+  const health = `${apiBase.replace(/\/$/, '')}/health`;
+  let round = await hostFetch(health);
+  if (!isChallengeHtml(round.text)) {
+    hostReady = true;
+    return;
+  }
+  const token = solveChallenge(round.text);
+  if (!token) {
+    throw new Error('Cannot pass the hosting security check.');
+  }
+  hostCookie = `__test=${token}`;
+  round = await hostFetch(`${health}?i=1`);
+  if (isChallengeHtml(round.text)) {
+    hostCookie = '';
+    throw new Error('Cannot reach the Holy Face AMGS server. Check your internet connection.');
+  }
+  hostReady = true;
+}
 
 const isDev = !app.isPackaged;
 
@@ -47,7 +105,7 @@ function createWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 700,
-    title: 'Holy Face AMGS — Teacher',
+    title: 'Holy Face AMGS — Registrar',
     backgroundColor: '#0b1f3a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -96,7 +154,11 @@ ipcMain.handle('export-file', async (_event, opts) => {
     filters: opts?.filters || [{ name: 'CSV', extensions: ['csv'] }],
   });
   if (canceled || !filePath) return { canceled: true };
-  fs.writeFileSync(filePath, opts?.content ?? '', 'utf8');
+  if (opts?.encoding === 'base64') {
+    fs.writeFileSync(filePath, Buffer.from(opts.content ?? '', 'base64'));
+  } else {
+    fs.writeFileSync(filePath, opts?.content ?? '', 'utf8');
+  }
   return { canceled: false, filePath };
 });
 
@@ -105,6 +167,37 @@ ipcMain.handle('print-page', async (event) => {
   if (!win) return { ok: false };
   win.webContents.print({ silent: false });
   return { ok: true };
+});
+
+ipcMain.handle('amgs-fetch', async (_event, spec) => {
+  try {
+    const url = String(spec?.url || '');
+    if (!url) {
+      return { ok: false, status: 0, data: { message: 'Missing URL.' } };
+    }
+    const apiBase = apiBaseFromUrl(url);
+    await ensureHostCookie(apiBase);
+    let round = await hostFetch(url, spec || {});
+    if (isChallengeHtml(round.text)) {
+      hostCookie = '';
+      hostReady = false;
+      await ensureHostCookie(apiBase);
+      round = await hostFetch(url, spec || {});
+    }
+    let data = {};
+    try {
+      data = JSON.parse(round.text);
+    } catch {
+      data = { message: 'The AMGS server returned an unexpected response.' };
+    }
+    return { ok: round.ok && !isChallengeHtml(round.text), status: round.status, data };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      data: { message: String(err.message || err) },
+    };
+  }
 });
 
 app.whenReady().then(createWindow);

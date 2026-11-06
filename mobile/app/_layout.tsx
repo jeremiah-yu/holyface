@@ -1,6 +1,7 @@
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, Text, View } from 'react-native';
+import { HostGate } from '../src/api/hostGate';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
 import { StudyChatbot } from '../src/components/StudyChatbot';
 
@@ -17,7 +18,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 function Inner() {
-  const { darkMode, token, ready, locked, mustChange, consentComplete } = useAuth();
+  const { darkMode, colors, token, ready, locked, mustChange, consentComplete } = useAuth();
   const showChat = Boolean(ready && token && !locked && !mustChange && consentComplete);
   return (
     <>
@@ -26,7 +27,8 @@ function Inner() {
         screenOptions={{
           headerStyle: { backgroundColor: '#0b1f3a' },
           headerTintColor: '#fff',
-          headerTitleStyle: { fontWeight: '700' },
+          headerTitleStyle: { fontWeight: '700', color: '#fff' },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       />
       {showChat ? <StudyChatbot /> : null}
@@ -36,8 +38,10 @@ function Inner() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <Inner />
-    </AuthProvider>
+    <HostGate>
+      <AuthProvider>
+        <Inner />
+      </AuthProvider>
+    </HostGate>
   );
 }

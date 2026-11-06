@@ -21,7 +21,7 @@ Place this repository under your web root, for example:
 1. Open [http://localhost/phpmyadmin](http://localhost/phpmyadmin).
 2. Import **`database/schema.sql`** (creates `holyface_amgs`).
 3. Import **`database/seed.sql`** (fictional users and sample classes).
-4. Import later migrations in order: `002_contact_inquiries.sql`, `003_student_app.sql`, **`004_teacher_desktop.sql`**, **`005_policies.sql`**, **`006_official_report_cards.sql`**.
+4. Import later migrations in order: `002_contact_inquiries.sql`, `003_student_app.sql`, **`004_teacher_desktop.sql`**, **`005_policies.sql`**, **`006_official_report_cards.sql`**, **`007_registrar_console.sql`**, **`008_adviser_cards.sql`**.
 5. Run **`database/create_db_user.sql`** in the SQL tab (edit password first).
 
 ## 4. Configure the API
@@ -55,7 +55,11 @@ Update **`web/config.php`** if your API URL differs.
 
 **Logo:** replace `web/public/assets/img/hf-logo.png` (or keep the downloaded official logo).
 
-## 6. Teacher desktop app
+## 6. Teacher web workspace and Registrar desktop
+
+Teachers encode grades in the browser. After `npm run build:web` in `desktop/`, open **Staff login** on the website (`web/public/login.php`) with a teacher account.
+
+The Electron app is for the **Registrar** (file vault, accounts, locks, audit logs):
 
 ```powershell
 cd C:\xampp\htdocs\holyface\desktop
@@ -63,7 +67,13 @@ npm install
 npm run dev
 ```
 
-Electron loads Vite on port **5173**. The app probes `http://127.0.0.1:8089` then Apache `http://localhost/holyface/api/public` (see `desktop/src/api.ts` and `electron/preload.js`). Override with env `AMGS_API_URL`.
+`npm run dev` opens the Registrar desktop (Electron) and Vite on port **5173**. Opening `http://localhost:5173` in a browser is the teacher workspace. The app probes `http://127.0.0.1:8089` then Apache `http://localhost/holyface/api/public` (see `desktop/src/api.ts` and `electron/preload.js`). Override with env `AMGS_API_URL`.
+
+Apply the registrar file-vault table once:
+
+```powershell
+C:\xampp\mysql\bin\mysql.exe -u root holyface_amgs -e "SOURCE D:/OneDrive/Desktop/holyface/database/migrations/007_registrar_console.sql;"
+```
 
 If Apache is not serving `/holyface`, run the API with:
 

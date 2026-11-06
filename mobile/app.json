@@ -4,20 +4,24 @@
     "slug": "holyface-student",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "holyface",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "school.holyface.student",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Unlock your Holy Face student ID with Face ID."
+        "NSFaceIDUsageDescription": "Log in and unlock your Holy Face student account with Face ID."
       }
     },
+    "newArchEnabled": false,
     "android": {
+      "package": "school.holyface.student",
+      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE", "USE_BIOMETRIC", "USE_FINGERPRINT"],
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0b1f3a"
-      },
-      "package": "school.holyface.student"
+      }
     },
     "plugins": [
       "expo-secure-store",
@@ -39,7 +43,7 @@
       ]
     ],
     "extra": {
-      "apiBaseUrl": "http://192.168.254.103:8089"
+      "apiBaseUrl": "https://holyface.infinityfreeapp.com/api/public"
     }
   }
 }
