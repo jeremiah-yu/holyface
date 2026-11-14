@@ -427,13 +427,14 @@ final class ReportCardService
         $calendar = AcademicCalendar::forGrade($gradeLevel);
 
         $subs = $pdo->prepare(
-            'SELECT sub.subject_code, sub.title,
+            'SELECT sub.subject_code, sub.title, sc.code AS category_code, sc.name AS category_name,
                     fg.q1, fg.q2, fg.q3, fg.q4, fg.sem1, fg.sem2, fg.final_rating, fg.action_taken, fg.is_submitted
              FROM class_subject_assignments csa
              INNER JOIN subjects sub ON sub.id = csa.subject_id
+             INNER JOIN subject_categories sc ON sc.id = sub.category_id
              LEFT JOIN final_grades fg ON fg.class_subject_assignment_id = csa.id AND fg.enrollment_id = ?
              WHERE csa.class_section_id = ?
-             ORDER BY sub.title'
+             ORDER BY sc.id, sub.title'
         );
         $subs->execute([$enrollmentId, (int) $student['class_section_id']]);
         $subjects = [];
@@ -457,6 +458,8 @@ final class ReportCardService
             $subjects[] = [
                 'subject_code' => $row['subject_code'],
                 'title' => $row['title'],
+                'category_code' => $row['category_code'],
+                'category_name' => $row['category_name'],
                 'q1' => $this->num($row['q1']),
                 'q2' => $this->num($row['q2']),
                 'sem1' => $calendar['mode'] === 'semesters' ? $this->num($row['sem1']) : null,
@@ -465,6 +468,7 @@ final class ReportCardService
                 'sem2' => $calendar['mode'] === 'semesters' ? $this->num($row['sem2']) : null,
                 'periods' => $periods,
                 'final_rating' => $final,
+                'remarks' => $final >= $this->passingMark() ? 'PASSED' : 'FAILED',
                 'action_taken' => $row['action_taken'],
             ];
         }
@@ -477,16 +481,20 @@ final class ReportCardService
         $honor = AcademicCalendar::honorLabel($average);
         return [
             'school' => [
-                'name' => 'HOLY FACE OF JESUS LYCEUM OF SAN JOSE, INC.',
+                'name' => 'HOLY FACE OF JESUS LYCEUM OF SAN JOSE INC.',
                 'short_name' => 'Holy Face',
-                'address' => 'R & J Bldg., Blk 09, Lot 6 & 8, Mayon Ave., Amityville, San Jose, Rodriguez, Rizal, Philippines',
-                'logo' => 'https://www.holyface.school/assets/img/branding/hf-logo.png',
+                'region' => 'REGION IV-A CALABARZON',
+                'division' => 'DIVISION OF RIZAL',
+                'address' => 'Block 5 Lot 28-34, Valentino Village, San Jose, Rodriguez, Rizal 1860',
+                'logo' => 'https://holyface.infinityfreeapp.com/assets/img/hf-seal.png',
+                'principal_name' => 'DR. MA BELLA T. TOLENTINO',
             ],
             'student' => [
                 'full_name' => $student['full_name'],
                 'student_number' => $student['lrn'],
                 'strand_code' => $student['strand_code'],
                 'strand_name' => $student['strand_name'],
+                'track_strand' => $this->trackStrandLabel((string) $student['strand_code'], (string) $student['strand_name']),
                 'grade_level' => $gradeLevel,
                 'section_code' => $student['section_code'],
                 'school_year' => $student['school_year'],
@@ -501,12 +509,43 @@ final class ReportCardService
             'remarks' => $average >= $passing ? 'PASSED' : 'FAILED',
             'honor' => $honor,
             'passing_mark' => $passing,
+            'core_values' => $this->coreValues(),
+            'attendance' => [
+                'months' => ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                'school_days' => [null, null, null, null, null],
+                'days_present' => [null, null, null, null, null],
+                'days_absent' => [null, null, null, null, null],
+            ],
+            'marking_key' => [
+                'AO' => 'Always Observed',
+                'SO' => 'Sometimes Observed',
+                'RO' => 'Rarely Observed',
+                'NO' => 'Not Observed',
+            ],
         ];
     }
 
     private function num(mixed $v): ?float
     {
         return $v === null || $v === '' ? null : (float) $v;
+    }
+
+    private function trackStrandLabel(string $code, string $name): string
+    {
+        $upper = strtoupper($code);
+        $track = in_array($upper, ['ICT', 'HE'], true) ? 'TECHNICAL-VOCATIONAL-LIVELIHOOD' : 'ACADEMIC';
+        return $track . ' - ' . strtoupper($name !== '' ? $name : $code);
+    }
+
+    /** @return list<array{value:string, statement:string, rating:?string}> */
+    private function coreValues(): array
+    {
+        return [
+            ['value' => 'Maka-Diyos', 'statement' => 'Expresses one\'s spiritual beliefs while respecting the spiritual beliefs of others', 'rating' => null],
+            ['value' => 'Makatao', 'statement' => 'Shows sensitivity to individual differences and people in need', 'rating' => null],
+            ['value' => 'Makakalikasan', 'statement' => 'Cares for the environment and uses resources wisely and responsibly', 'rating' => null],
+            ['value' => 'Makabansa', 'statement' => 'Demonstrate appropriate behavior in carrying out activities in the school, community, and country', 'rating' => null],
+        ];
     }
 
     private function passingMark(): float

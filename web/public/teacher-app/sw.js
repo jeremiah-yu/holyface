@@ -1,4 +1,4 @@
-const CACHE = 'hf-professor-v1';
+const CACHE = 'hf-professor-v5';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

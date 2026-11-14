@@ -1,6 +1,7 @@
 /api/vendor/
 /api/.env
 /api/storage/registrar/
+/api/storage/mail.json
 /desktop/node_modules/
 /desktop/dist/
 /desktop/out/

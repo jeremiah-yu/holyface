@@ -31,6 +31,10 @@ export default function Users({ token }: { token: string }) {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [tempPw, setTempPw] = useState('');
+  const [mail, setMail] = useState({ from: 'registrar@holyface.school', host: 'smtp.gmail.com', port: 587, user: '', password_set: false, ready: false });
+  const [importRows, setImportRows] = useState<
+    { row: number; username?: string; status: string; message: string; email_sent?: boolean; temporary_password?: string }[]
+  >([]);
 
   async function load() {
     const params = new URLSearchParams();
@@ -42,6 +46,7 @@ export default function Users({ token }: { token: string }) {
 
   useEffect(() => {
     api<Filters>('/teachers/filters', token).then(setFilters).catch(() => undefined);
+    api<{ mail: typeof mail }>('/admin/mail', token).then((r) => setMail(r.mail)).catch(() => undefined);
   }, [token]);
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export default function Users({ token }: { token: string }) {
     setMsg('');
     setTempPw('');
     try {
-      const r = await api<{ temporary_password: string }>('/admin/users', token, {
+      const r = await api<{ temporary_password: string; email_sent?: boolean; mail_ready?: boolean; email?: string }>('/admin/users', token, {
         method: 'POST',
         body: JSON.stringify({
           role: fd.get('role'),
@@ -73,7 +78,14 @@ export default function Users({ token }: { token: string }) {
         }),
       });
       setTempPw(r.temporary_password);
-      setMsg('Account created. Give the temporary password privately — the user must change it at first login.');
+      const sentTo = String(fd.get('email') || r.email || '');
+      setMsg(
+        r.email_sent
+          ? `Account created. The username and temporary password were sent to ${sentTo}.`
+          : r.mail_ready
+            ? `Account created, but the email to ${sentTo} could not be sent. Give the temporary password below.`
+            : 'Account created, but nothing was emailed yet. Save the sending email first, then use Reset password to send it.'
+      );
       (e.target as HTMLFormElement).reset();
       await load();
     } catch (err) {
@@ -91,18 +103,144 @@ export default function Users({ token }: { token: string }) {
 
   async function resetPassword(u: DirectoryUser) {
     if (!window.confirm(`Reset password for ${u.full_name}?`)) return;
-    const r = await api<{ temporary_password: string | null }>('/admin/users', token, {
+    const r = await api<{ temporary_password: string | null; email_sent?: boolean; email?: string; mail_ready?: boolean }>('/admin/users', token, {
       method: 'PUT',
       body: JSON.stringify({ id: u.id, reset_password: true }),
     });
     setTempPw(r.temporary_password ?? '');
-    setMsg(`Temporary password issued for ${u.full_name}.`);
+    setMsg(
+      r.email_sent
+        ? `A new temporary password was emailed to ${r.email || u.email}.`
+        : `Password reset for ${u.full_name}, but the email was not sent. Give the temporary password below.`
+    );
+  }
+
+  async function remove(u: DirectoryUser) {
+    if (!window.confirm(`Delete the account of ${u.full_name} (${u.username})? This cannot be undone. A professor's classes are moved to another professor.`)) return;
+    setError('');
+    setMsg('');
+    try {
+      await api('/admin/users/delete', token, {
+        method: 'POST',
+        body: JSON.stringify({ id: u.id }),
+      });
+      setMsg(`${u.full_name} was deleted.`);
+      await load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  function downloadTemplate() {
+    const csv = [
+      'full_name,email,username,student_number,strand,grade_level,section_code,guardian_name,guardian_contact',
+      'Juan Miguel Dela Rosa,juan@example.com,s010,123456789021,STEM,11,STEM-A,Rosa Dela Rosa,09171234501',
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'holyface-students.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importCsv(file: File) {
+    setError('');
+    setMsg('');
+    setImportRows([]);
+    try {
+      const csv = await file.text();
+      const r = await api<{
+        created: number;
+        emailed: number;
+        results: { row: number; username?: string; status: string; message: string; email_sent?: boolean; temporary_password?: string }[];
+      }>('/admin/users/import', token, {
+        method: 'POST',
+        body: JSON.stringify({ csv }),
+      });
+      setImportRows(r.results);
+      setMsg(`Created ${r.created} student account${r.created === 1 ? '' : 's'}. Emailed ${r.emailed}.`);
+      await load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
   }
 
   return (
     <div className="card">
       <h2>Accounts</h2>
-      <p className="hint">Create and maintain Registrar, teacher, and student logins. Passwords are hashed with Argon2id.</p>
+      <p className="hint">
+        Creating an account emails the username and temporary password to that person's email.
+        The message is sent from the sending mailbox below. Students can also be imported from a CSV.
+      </p>
+      <form
+        className="filters user-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          setError('');
+          setMsg('');
+          try {
+            const saved = await api<{ mail: typeof mail }>('/admin/mail', token, {
+              method: 'PUT',
+              body: JSON.stringify({
+                from: fd.get('from'),
+                host: fd.get('host'),
+                port: Number(fd.get('port') || 587),
+                user: fd.get('user'),
+                pass: fd.get('pass') || '',
+              }),
+            });
+            setMail(saved.mail);
+            setMsg(`Sending email saved. New accounts will be emailed from ${saved.mail.from}.`);
+          } catch (err) {
+            setError((err as Error).message);
+          }
+        }}
+      >
+        <label>
+          Sending email
+          <input name="from" type="email" required defaultValue={mail.from} key={`from-${mail.from}`} />
+        </label>
+        <label>
+          SMTP host
+          <input name="host" required defaultValue={mail.host} key={`host-${mail.host}`} />
+        </label>
+        <label>
+          Port
+          <input name="port" type="number" required defaultValue={mail.port} key={`port-${mail.port}`} />
+        </label>
+        <label>
+          Mailbox username
+          <input name="user" type="email" required defaultValue={mail.user} key={`user-${mail.user}`} autoComplete="off" />
+        </label>
+        <label>
+          App password
+          <input name="pass" type="password" autoComplete="new-password" placeholder={mail.password_set ? 'Saved — leave blank to keep' : 'Gmail app password'} />
+        </label>
+        <button type="submit">Save sending email</button>
+        <button
+          type="button"
+          className="ghost"
+          onClick={async () => {
+            setError('');
+            setMsg('');
+            try {
+              const r = await api<{ sent_to: string }>('/admin/mail/test', token, { method: 'POST', body: '{}' });
+              setMsg(`Test email sent to ${r.sent_to}.`);
+            } catch (err) {
+              setError((err as Error).message);
+            }
+          }}
+        >
+          Send test email
+        </button>
+      </form>
+      <p className="hint">
+        InfinityFree cannot send mail by itself. Use a Gmail address with an app password, host smtp.gmail.com, and port 587.
+        That mailbox is the sender. {mail.ready ? 'Sending email is ready.' : 'Sending email is not set yet, so new accounts are not emailed.'}
+      </p>
       {msg && <p className="ok">{msg}</p>}
       {tempPw && (
         <p className="warn">
@@ -185,6 +323,55 @@ export default function Users({ token }: { token: string }) {
 
       <div className="filters">
         <label>
+          Import students (CSV)
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file) void importCsv(file);
+            }}
+          />
+        </label>
+        <button type="button" className="ghost" onClick={downloadTemplate}>
+          Download CSV template
+        </button>
+      </div>
+      <p className="hint">
+        Required columns: full_name, email, username, student_number, strand, grade_level, section_code.
+        Strand is ABM, HUMSS, ICT, HE, or STEM. A row with a blank field is skipped and is not emailed.
+      </p>
+      {importRows.length > 0 && (
+        <table>
+          <thead>
+            <tr>
+              <th>Row</th>
+              <th>Username</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {importRows.map((row) => (
+              <tr key={`${row.row}-${row.username ?? ''}`}>
+                <td>{row.row}</td>
+                <td>{row.username || '—'}</td>
+                <td>
+                  {row.message}
+                  {row.temporary_password ? (
+                    <div className="warn">
+                      Temporary password: <code>{row.temporary_password}</code>
+                    </div>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <div className="filters">
+        <label>
           Filter role
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">All</option>
@@ -237,6 +424,9 @@ export default function Users({ token }: { token: string }) {
                 </button>{' '}
                 <button type="button" className="ghost" onClick={() => void resetPassword(u)}>
                   Reset password
+                </button>{' '}
+                <button type="button" className="ghost" onClick={() => void remove(u)}>
+                  Delete
                 </button>
               </td>
             </tr>

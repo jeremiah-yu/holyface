@@ -7,6 +7,7 @@ use HolyFace\Api\Database\Connection;
 use HolyFace\Api\Http\Request;
 use HolyFace\Api\Http\Response;
 use HolyFace\Api\Services\AuditService;
+use HolyFace\Api\Services\MailService;
 use PDO;
 use PDOException;
 
@@ -191,11 +192,18 @@ final class AdminController
             'username' => $username,
         ], $request->ip);
 
+        $mail = new MailService();
+        $studentNumber = $role === 'student' ? trim((string) ($body['student_number'] ?? '')) : '';
+        $emailSent = $mail->sendAccount($email, $fullName, $username, $password, $role, $studentNumber);
+
         Response::json([
             'success' => true,
             'user_id' => $userId,
             'temporary_password' => $password,
             'must_change_password' => true,
+            'email' => $email,
+            'email_sent' => $emailSent,
+            'mail_ready' => $mail->isReady(),
         ], 201);
     }
 
@@ -244,9 +252,271 @@ final class AdminController
                     $id,
                 ]);
             $this->audit->log((int) $auth['user']['id'], 'user_password_reset', 'user', (string) $id, null, $request->ip);
+            $who = $pdo->prepare(
+                'SELECT u.email, u.full_name, u.username, r.code AS role
+                 FROM users u INNER JOIN roles r ON r.id = u.role_id WHERE u.id = ?'
+            );
+            $who->execute([$id]);
+            $person = $who->fetch(PDO::FETCH_ASSOC) ?: null;
+            if ($person) {
+                $mail = new MailService();
+                $emailSent = $mail->sendAccount(
+                    (string) $person['email'],
+                    (string) $person['full_name'],
+                    (string) $person['username'],
+                    $temporary,
+                    (string) $person['role']
+                );
+                Response::json([
+                    'success' => true,
+                    'temporary_password' => $temporary,
+                    'email' => $person['email'],
+                    'email_sent' => $emailSent,
+                    'mail_ready' => $mail->isReady(),
+                ]);
+                return;
+            }
         }
 
         Response::json(['success' => true, 'temporary_password' => $temporary]);
+    }
+
+    public function deleteUser(Request $request, array $auth): void
+    {
+        if (!$this->requireAdmin($auth)) {
+            return;
+        }
+        $id = (int) (($request->body['id'] ?? null) ?? ($request->query['id'] ?? 0));
+        if ($id < 1) {
+            Response::error('User id is required.', 422);
+            return;
+        }
+        if ($id === (int) $auth['user']['id']) {
+            Response::error('You cannot delete your own account.', 422);
+            return;
+        }
+
+        $pdo = Connection::get();
+        $stmt = $pdo->prepare(
+            'SELECT u.id, u.username, u.full_name, r.code AS role
+             FROM users u INNER JOIN roles r ON r.id = u.role_id WHERE u.id = ?'
+        );
+        $stmt->execute([$id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            Response::error('User not found.', 404);
+            return;
+        }
+        if ($user['role'] === 'admin') {
+            $admins = (int) $pdo->query(
+                "SELECT COUNT(*) FROM users u INNER JOIN roles r ON r.id = u.role_id WHERE r.code = 'admin'"
+            )->fetchColumn();
+            if ($admins <= 1) {
+                Response::error('The last Registrar account cannot be deleted.', 422);
+                return;
+            }
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $this->detachUser($pdo, $id, (int) $auth['user']['id']);
+            $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+            $pdo->commit();
+        } catch (\RuntimeException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            Response::error($e->getMessage(), 422);
+            return;
+        } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            Response::error('This account is still linked to school records and could not be deleted.', 409);
+            return;
+        }
+
+        $this->audit->log((int) $auth['user']['id'], 'user_deleted', 'user', (string) $id, [
+            'username' => $user['username'],
+            'role' => $user['role'],
+        ], $request->ip);
+        Response::json(['success' => true]);
+    }
+
+    public function importStudents(Request $request, array $auth): void
+    {
+        if (!$this->requireAdmin($auth)) {
+            return;
+        }
+        $csv = (string) (($request->body['csv'] ?? '') );
+        $csv = preg_replace('/^\xEF\xBB\xBF/', '', $csv) ?? $csv;
+        $lines = preg_split("/\r\n|\n|\r/", trim($csv)) ?: [];
+        $lines = array_values(array_filter($lines, static fn (string $line): bool => trim($line) !== ''));
+        if (count($lines) < 2) {
+            Response::error('The CSV needs a header row and at least one student.', 422);
+            return;
+        }
+        if (count($lines) > 301) {
+            Response::error('Import up to 300 students at a time.', 422);
+            return;
+        }
+
+        $header = array_map(
+            static fn (string $col): string => strtolower(trim($col)),
+            str_getcsv(array_shift($lines))
+        );
+        $need = ['full_name', 'email', 'username', 'student_number', 'strand', 'grade_level', 'section_code'];
+        foreach ($need as $col) {
+            if (!in_array($col, $header, true)) {
+                Response::error('CSV must include columns: ' . implode(', ', $need) . '.', 422);
+                return;
+            }
+        }
+
+        $pdo = Connection::get();
+        $mail = new MailService();
+        $results = [];
+        $created = 0;
+        $emailed = 0;
+        $seen = ['username' => [], 'email' => [], 'student_number' => []];
+
+        foreach ($lines as $index => $line) {
+            $rowNo = $index + 2;
+            $cells = str_getcsv($line);
+            $row = [];
+            foreach ($header as $i => $name) {
+                $row[$name] = trim((string) ($cells[$i] ?? ''));
+            }
+            $missing = [];
+            foreach ($need as $col) {
+                if (($row[$col] ?? '') === '') {
+                    $missing[] = $col;
+                }
+            }
+            if ($missing !== []) {
+                $results[] = [
+                    'row' => $rowNo,
+                    'username' => $row['username'] ?? '',
+                    'status' => 'skipped',
+                    'message' => 'Incomplete details: ' . implode(', ', $missing) . '. No email was sent.',
+                ];
+                continue;
+            }
+            $usernameKey = strtolower($row['username']);
+            $emailKey = strtolower($row['email']);
+            $numberKey = preg_replace('/\D+/', '', $row['student_number']) ?? '';
+            if (isset($seen['username'][$usernameKey]) || isset($seen['email'][$emailKey]) || isset($seen['student_number'][$numberKey])) {
+                $results[] = [
+                    'row' => $rowNo,
+                    'username' => $row['username'],
+                    'status' => 'skipped',
+                    'message' => 'Duplicate username, email, or student number inside this file.',
+                ];
+                continue;
+            }
+            $strandId = $this->strandId($pdo, $row['strand']);
+            if ($strandId < 1) {
+                $results[] = [
+                    'row' => $rowNo,
+                    'username' => $row['username'],
+                    'status' => 'skipped',
+                    'message' => 'Unknown strand code "' . $row['strand'] . '". Use ABM, HUMSS, ICT, HE, or STEM.',
+                ];
+                continue;
+            }
+            $password = $row['password'] ?? '';
+            if ($password === '') {
+                $password = $this->temporaryPassword();
+            }
+            if (!$this->isStrong($password)) {
+                $results[] = [
+                    'row' => $rowNo,
+                    'username' => $row['username'],
+                    'status' => 'skipped',
+                    'message' => 'Password must be at least 10 characters with upper, lower, number, and symbol.',
+                ];
+                continue;
+            }
+
+            try {
+                $pdo->beginTransaction();
+                $roleId = $this->roleId($pdo, 'student');
+                $pdo->prepare(
+                    'INSERT INTO users (role_id, email, username, password_hash, full_name, must_change_password)
+                     VALUES (?, ?, ?, ?, ?, 1)'
+                )->execute([
+                    $roleId,
+                    $emailKey,
+                    $row['username'],
+                    password_hash($password, defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT),
+                    $row['full_name'],
+                ]);
+                $userId = (int) $pdo->lastInsertId();
+                $this->insertStudent($pdo, $userId, [
+                    'student_number' => $numberKey,
+                    'strand_id' => $strandId,
+                    'grade_level' => (int) $row['grade_level'],
+                    'section_code' => $row['section_code'],
+                    'guardian_name' => $row['guardian_name'] ?? '',
+                    'guardian_contact' => $row['guardian_contact'] ?? '',
+                ]);
+                $pdo->commit();
+            } catch (\InvalidArgumentException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $results[] = ['row' => $rowNo, 'username' => $row['username'], 'status' => 'skipped', 'message' => $e->getMessage()];
+                continue;
+            } catch (PDOException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $message = str_contains($e->getMessage(), 'Duplicate')
+                    ? 'Username, email, or student number is already in use.'
+                    : 'Could not create this student account.';
+                $results[] = ['row' => $rowNo, 'username' => $row['username'], 'status' => 'skipped', 'message' => $message];
+                continue;
+            }
+
+            $seen['username'][$usernameKey] = true;
+            $seen['email'][$emailKey] = true;
+            $seen['student_number'][$numberKey] = true;
+            $created++;
+            $this->audit->log((int) $auth['user']['id'], 'user_created', 'user', (string) $userId, [
+                'role' => 'student',
+                'username' => $row['username'],
+                'source' => 'csv',
+            ], $request->ip);
+
+            $emailSent = $mail->sendAccount($emailKey, $row['full_name'], $row['username'], $password, 'student', $numberKey);
+            if ($emailSent) {
+                $emailed++;
+            }
+            $item = [
+                'row' => $rowNo,
+                'username' => $row['username'],
+                'full_name' => $row['full_name'],
+                'email' => $emailKey,
+                'status' => 'created',
+                'email_sent' => $emailSent,
+                'message' => $emailSent
+                    ? 'Account created and the login was emailed.'
+                    : ($mail->isReady()
+                        ? 'Account created, but the email could not be sent. Give this temporary password in person.'
+                        : 'Account created. Save the sending email first, then reset the password to email it.'),
+            ];
+            if (!$emailSent) {
+                $item['temporary_password'] = $password;
+            }
+            $results[] = $item;
+        }
+
+        Response::json([
+            'success' => true,
+            'created' => $created,
+            'emailed' => $emailed,
+            'results' => $results,
+        ]);
     }
 
     public function listFiles(Request $request, array $auth): void
@@ -526,6 +796,53 @@ final class AdminController
             && preg_match('/[^A-Za-z0-9]/', $password);
     }
 
+    private function temporaryPassword(): string
+    {
+        return 'HolyFace@' . bin2hex(random_bytes(3)) . (string) random_int(2, 9);
+    }
+
+    private function strandId(PDO $pdo, string $code): int
+    {
+        $stmt = $pdo->prepare('SELECT id FROM strands WHERE code = ?');
+        $stmt->execute([strtoupper(trim($code))]);
+        return (int) ($stmt->fetchColumn() ?: 0);
+    }
+
+    private function detachUser(PDO $pdo, int $userId, int $actorId): void
+    {
+        $pdo->prepare('UPDATE grade_components SET recorded_by = NULL WHERE recorded_by = ?')->execute([$userId]);
+        $pdo->prepare(
+            'DELETE gal FROM grade_audit_logs gal
+             INNER JOIN enrollments e ON e.id = gal.enrollment_id
+             INNER JOIN students s ON s.id = e.student_id
+             WHERE s.user_id = ? OR gal.actor_user_id = ?'
+        )->execute([$userId, $userId]);
+        $pdo->prepare('DELETE FROM grade_audit_logs WHERE actor_user_id = ?')->execute([$userId]);
+        $pdo->prepare('UPDATE announcements SET created_by = ? WHERE created_by = ?')->execute([$actorId, $userId]);
+        $pdo->prepare('UPDATE study_materials SET uploaded_by = ? WHERE uploaded_by = ?')->execute([$actorId, $userId]);
+        $pdo->prepare('UPDATE registrar_files SET uploaded_by = ? WHERE uploaded_by = ?')->execute([$actorId, $userId]);
+
+        $teacher = $pdo->prepare('SELECT id FROM teachers WHERE user_id = ?');
+        $teacher->execute([$userId]);
+        $teacherId = (int) ($teacher->fetchColumn() ?: 0);
+        if ($teacherId < 1) {
+            return;
+        }
+        $pdo->prepare('UPDATE class_sections SET adviser_teacher_id = NULL WHERE adviser_teacher_id = ?')->execute([$teacherId]);
+        $count = $pdo->prepare('SELECT COUNT(*) FROM class_subject_assignments WHERE teacher_id = ?');
+        $count->execute([$teacherId]);
+        if ((int) $count->fetchColumn() < 1) {
+            return;
+        }
+        $other = $pdo->prepare('SELECT id FROM teachers WHERE id <> ? ORDER BY id LIMIT 1');
+        $other->execute([$teacherId]);
+        $otherId = (int) ($other->fetchColumn() ?: 0);
+        if ($otherId < 1) {
+            throw new \RuntimeException('This professor still teaches classes. Assign those classes to another professor before deleting the account.');
+        }
+        $pdo->prepare('UPDATE class_subject_assignments SET teacher_id = ? WHERE teacher_id = ?')->execute([$otherId, $teacherId]);
+    }
+
     private function roleId(PDO $pdo, string $code): int
     {
         $stmt = $pdo->prepare('SELECT id FROM roles WHERE code = ?');
@@ -537,8 +854,8 @@ final class AdminController
     private function insertStudent(PDO $pdo, int $userId, array $body): void
     {
         $lrn = preg_replace('/\D+/', '', (string) ($body['student_number'] ?? $body['lrn'] ?? '')) ?? '';
-        if (strlen($lrn) < 8 || strlen($lrn) > 20) {
-            throw new \InvalidArgumentException('Student number must be 8 to 20 digits.');
+        if (strlen($lrn) < 8 || strlen($lrn) > 12) {
+            throw new \InvalidArgumentException('Student number must be 8 to 12 digits.');
         }
         $strandId = (int) ($body['strand_id'] ?? 0);
         $gradeLevel = (int) ($body['grade_level'] ?? 11);
@@ -590,5 +907,56 @@ final class AdminController
     private function storageDir(): string
     {
         return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'registrar';
+    }
+
+    public function mailSettings(Request $request, array $auth): void
+    {
+        if (!$this->requireAdmin($auth)) {
+            return;
+        }
+        Response::json(['success' => true, 'mail' => (new MailService())->publicConfig()]);
+    }
+
+    public function saveMailSettings(Request $request, array $auth): void
+    {
+        if (!$this->requireAdmin($auth)) {
+            return;
+        }
+        $body = $request->body ?? [];
+        try {
+            $mail = new MailService();
+            $mail->save([
+                'from' => $body['from'] ?? '',
+                'host' => $body['host'] ?? '',
+                'port' => $body['port'] ?? 587,
+                'user' => $body['user'] ?? '',
+                'pass' => $body['pass'] ?? '',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            Response::error($e->getMessage(), 422);
+            return;
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), 500);
+            return;
+        }
+        Response::json(['success' => true, 'mail' => (new MailService())->publicConfig()]);
+    }
+
+    public function testMail(Request $request, array $auth): void
+    {
+        if (!$this->requireAdmin($auth)) {
+            return;
+        }
+        $mail = new MailService();
+        if (!$mail->isReady()) {
+            Response::error('Save the sending email and app password first.', 422);
+            return;
+        }
+        $sent = $mail->sendTest();
+        if (!$sent) {
+            Response::error('The sending mailbox rejected the test. Check the email, app password, host, and port 587.', 502);
+            return;
+        }
+        Response::json(['success' => true, 'sent_to' => $mail->publicConfig()['from']]);
     }
 }

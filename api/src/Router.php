@@ -263,6 +263,30 @@ final class Router
             $admin->updateUser($request, $ctx);
             return;
         }
+        if ($path === '/admin/users' && $method === 'DELETE') {
+            $admin->deleteUser($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/users/delete' && $method === 'POST') {
+            $admin->deleteUser($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/users/import' && $method === 'POST') {
+            $admin->importStudents($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/mail' && $method === 'GET') {
+            $admin->mailSettings($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/mail' && $method === 'PUT') {
+            $admin->saveMailSettings($request, $ctx);
+            return;
+        }
+        if ($path === '/admin/mail/test' && $method === 'POST') {
+            $admin->testMail($request, $ctx);
+            return;
+        }
         if ($path === '/admin/files' && $method === 'GET') {
             $admin->listFiles($request, $ctx);
             return;

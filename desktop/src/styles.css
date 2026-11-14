@@ -19,7 +19,7 @@ html { font-size: 16px; }
 body { margin: 0; background: var(--bg); color: var(--navy); font-size: 1rem; }
 button, input, select { font: inherit; }
 
-.app-shell { display: grid; grid-template-columns: minmax(220px, 260px) 1fr; min-height: 100vh; min-height: 100dvh; }
+.app-shell { display: grid; grid-template-columns: minmax(220px, 260px) minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; min-width: 0; }
 .sidebar {
   background: var(--navy);
   color: var(--white);
@@ -47,7 +47,7 @@ button, input, select { font: inherit; }
 .nav.on, .nav:hover { background: var(--navy-2); color: var(--gold); }
 .logout { margin-top: auto; }
 
-.main { padding: 0.85rem 1rem 1.2rem; overflow: auto; display: flex; flex-direction: column; min-height: 100vh; }
+.main { padding: 0.85rem 1rem 1.2rem; overflow: auto; display: flex; flex-direction: column; min-height: 100vh; min-width: 0; max-width: 100%; }
 .card {
   background: var(--white);
   border-radius: 10px;
@@ -194,12 +194,15 @@ label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.95rem;
 .sheet {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  max-width: 100%;
   background: #fff;
   border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   font-family: Calibri, 'Segoe UI', sans-serif;
 }
+.sheet-scroll-hint { display: none; margin: 0; }
 .sheet-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -242,7 +245,15 @@ label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.95rem;
 }
 .formula-value { flex: 1; padding: 4px 8px; }
 .formula-msg { padding: 4px 10px; color: var(--ok); font-weight: 600; }
-.sheet-scroll { overflow: auto; flex: 1; max-height: calc(100vh - 230px); }
+.sheet-scroll {
+  overflow: auto;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  max-height: calc(100vh - 230px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
 .sheet-grid {
   border-collapse: collapse;
   min-width: 100%;
@@ -280,7 +291,8 @@ label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.95rem;
   background: var(--head);
 }
 .sheet-grid .col-b { width: 128px; min-width: 128px; }
-.sheet-grid .col-c { width: 190px; min-width: 190px; }
+.sheet-grid .col-c,
+.sheet-grid .col-name { width: 210px; min-width: 210px; }
 .sheet-grid .name-cell { font-weight: 600; }
 .sheet-grid .sticky-col {
   position: sticky;
@@ -291,6 +303,171 @@ label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.95rem;
 .sheet-grid .col-a { left: 0; }
 .sheet-grid .col-b { left: 36px; }
 .sheet-grid .col-c { left: 164px; box-shadow: 2px 0 0 #d0d0d0; }
+.sheet-grid .col-name { left: 36px; box-shadow: 2px 0 0 #d0d0d0; }
+.sheet.eclass {
+  background: #d9d9d9;
+  border: 1px solid #8f8f8f;
+}
+.sheet.eclass .eclass-actions {
+  background: #f3f3f3;
+  border-bottom: 1px solid #b0b0b0;
+}
+.sheet.eclass .eclass-scroll {
+  background: #c8c8c8;
+  padding: 12px;
+  max-height: calc(100vh - 180px);
+}
+.sheet.eclass .eclass-paper {
+  background: #fff;
+  color: #000;
+  min-width: max-content;
+  padding: 10px 12px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.sheet.eclass .eclass-title {
+  text-align: center;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0;
+}
+.sheet.eclass .eclass-pursuant {
+  text-align: center;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  font-size: 11px;
+  margin: 2px 0 10px;
+}
+.sheet.eclass .eclass-meta { margin-bottom: 8px; }
+.sheet.eclass .eclass-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+.sheet.eclass .e-label {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sheet.eclass .e-box {
+  border: 1px solid #000;
+  min-height: 24px;
+  padding: 2px 8px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+}
+.sheet.eclass .e-box.e-wide { min-width: 320px; }
+.sheet.eclass .e-box.e-period { font-weight: 700; min-width: 140px; justify-content: center; }
+.sheet.eclass .eclass-meta-band .e-box { border-width: 2px; }
+.sheet.eclass .eclass-grid {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  color: #000;
+}
+.sheet.eclass .eclass-grid th,
+.sheet.eclass .eclass-grid td {
+  border: 1px solid #000 !important;
+  background: #fff;
+  height: 22px;
+  padding: 0 2px;
+  text-align: center;
+  vertical-align: middle;
+}
+.sheet.eclass .eclass-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #fff !important;
+  color: #000 !important;
+  font-weight: 700;
+}
+.sheet.eclass .eclass-grid thead tr:nth-child(2) th { top: 28px; }
+.sheet.eclass .eclass-grid .e-learners {
+  font-size: 13px;
+  min-width: 190px;
+}
+.sheet.eclass .eclass-grid .e-group {
+  font-size: 13px;
+  border-left-width: 2px !important;
+  border-right-width: 2px !important;
+}
+.sheet.eclass .eclass-grid .e-num {
+  min-width: 34px;
+  width: 34px;
+}
+.sheet.eclass .eclass-grid .e-total,
+.sheet.eclass .eclass-grid .e-ps,
+.sheet.eclass .eclass-grid .e-final {
+  min-width: 48px;
+  font-weight: 700;
+}
+.sheet.eclass .eclass-grid .e-ws,
+.sheet.eclass .eclass-grid td.e-ws,
+.sheet.eclass .eclass-grid th.e-ws {
+  background: #f2f2f2 !important;
+  min-width: 48px;
+  font-weight: 700;
+  border-right-width: 2px !important;
+}
+.sheet.eclass .eclass-grid .col-name,
+.sheet.eclass .eclass-grid .col-a {
+  background: #fff !important;
+  text-align: left;
+  padding-left: 4px;
+}
+.sheet.eclass .eclass-grid .col-num { text-align: center; width: 28px; min-width: 28px; }
+.sheet.eclass .eclass-grid .name-cell { font-weight: 700; white-space: nowrap; }
+.sheet.eclass .hps-row td {
+  background: #fff !important;
+  font-weight: 700;
+}
+.sheet.eclass .hps-row .e-hps-label { text-align: right !important; font-size: 11px; }
+.sheet.eclass .hps-cell input {
+  width: 32px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fff;
+}
+.sheet.eclass .eclass-grid input {
+  width: 32px;
+  height: 20px;
+  font-size: 11px;
+  color: #000;
+}
+.sheet.eclass .eclass-grid td.active {
+  outline: 2px solid #217346;
+  outline-offset: -2px;
+}
+.sheet.eclass .e-sex-row td {
+  background: #bfbfbf !important;
+  font-weight: 700;
+  text-align: left !important;
+  border-width: 2px !important;
+}
+.sheet.eclass .eclass-grid tbody tr:nth-child(even) td { background: #fff; }
+.sheet.eclass .eclass-grid tbody tr:hover td { background: #eaf6ef; }
+.sheet.eclass .eclass-grid tbody tr:hover td.e-ws,
+.sheet.eclass .eclass-grid tbody tr:hover td.sticky-col { background: #eaf6ef !important; }
+.sheet.eclass .eclass-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #333;
+}
+.sheet.eclass .group-ww,
+.sheet.eclass .group-pt,
+.sheet.eclass .group-qa,
+.sheet.eclass .group-out {
+  background: #fff !important;
+  color: #000 !important;
+}
 .sheet-grid tbody tr:nth-child(even) td { background: #fafafa; }
 .sheet-grid tbody tr:nth-child(even) td.sticky-col { background: #fafafa; }
 .sheet-grid tbody tr:hover td { background: #eaf6ef; }
@@ -403,9 +580,39 @@ button.nav-backdrop {
     align-items: center;
   }
   .login { width: min(560px, 100%); }
-  .sheet-scroll { max-height: 70vh; }
+  .main { overflow-x: hidden; }
+  .sheet-scroll { max-height: min(70vh, 70dvh); }
+  .sheet-scroll-hint {
+    display: block;
+    padding: 0.4rem 0.65rem;
+    background: #eaf6ef;
+    color: var(--navy);
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--line);
+  }
   .sheet-toolbar { font-size: 0.85rem; }
-  .formula-name { min-width: 96px; max-width: 140px; }
+  .sheet-toolbar strong { flex: 1 1 100%; }
+  .formula-bar { min-width: 0; }
+  .formula-name { min-width: 0; max-width: 46%; }
+  .formula-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sheet-grid .col-num { width: 32px; min-width: 32px; }
+  .sheet-grid .col-b { position: static; left: auto; width: 108px; min-width: 108px; }
+  .sheet-grid .col-c,
+  .sheet-grid .col-name {
+    left: 32px;
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sheet.eclass .learner-no { display: none; }
+  .sheet-grid thead tr:first-child th { height: 32px; }
+  .sheet-grid thead tr:nth-child(2) th { top: 32px; }
+  .sheet-grid td:not(.sticky-col) { min-width: 76px; }
+  .sheet-grid input { width: 72px; height: 36px; font-size: 16px; }
+  .sheet-tabs { flex-wrap: wrap; height: auto; padding-top: 4px; padding-bottom: 6px; }
+  .sheet-hint { white-space: normal; line-height: 1.35; }
   .card > table,
   .card form > table { display: block; overflow-x: auto; }
   .user-form { align-items: stretch; }
